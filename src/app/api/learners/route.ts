@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { assertCan, canInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
 import { cookies } from "next/headers";
+import { randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
 const learnerInput = z.object({ name: z.string().trim().min(2).max(120), grade: z.enum(["PP1","PP2","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9"]), gender: z.enum(["Female","Male"]) });
 async function currentRole() { const token = (await cookies()).get("mary_session")?.value; const session = token ? await readSession(token) : null; if (!session) return null; const user = await db.user.findUnique({ where: { id: session.id }, select: { id: true, role: true, suspended: true, forcePasswordChange: true } }); return user && !user.suspended && !user.forcePasswordChange ? user : null; }
 export async function GET(request: Request) {
@@ -27,7 +29,9 @@ export async function POST(request: Request) {
  try { assertCan(user.role, "learners", "create"); } catch { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "Learner" } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
  let input: unknown; try { input = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
  const parsed = learnerInput.safeParse(input); if (!parsed.success) return NextResponse.json({ error: "Check the admission number, name, grade, and gender." }, { status: 400 });
- try { const learner = await db.$transaction(async (tx) => { const counter = await tx.admissionCounter.upsert({ where: { id: "global" }, create: { id: "global", lastNumber: 1 }, update: { lastNumber: { increment: 1 } } }); const admissionNo = `MR-${String(counter.lastNumber).padStart(2, "0")}`; const row = await tx.learner.create({ data: { ...parsed.data, admissionNo, admissionStatus: user.role === "SECRETARY" ? "PENDING" : "APPROVED" } }); await tx.auditEvent.create({ data: { actorId: user.id, action: user.role === "SECRETARY" ? "ADMISSION_SUBMITTED" : "LEARNER_CREATED", entity: "Learner", entityId: row.id } }); return row; }); return NextResponse.json({ learner }, { status: 201 }); }
+ const temporaryPassword = randomBytes(18).toString("base64url");
+ const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+ try { const result = await db.$transaction(async (tx) => { const counter = await tx.admissionCounter.upsert({ where: { id: "global" }, create: { id: "global", lastNumber: 1 }, update: { lastNumber: { increment: 1 } } }); const admissionNo = `MR-${String(counter.lastNumber).padStart(2, "0")}`; const admissionStatus = user.role === "SECRETARY" ? "PENDING" : "APPROVED"; const row = await tx.learner.create({ data: { ...parsed.data, admissionNo, admissionStatus } }); const learnerEmail = `${admissionNo.toLowerCase()}@learners.maryroyal.ac.ke`; const learnerAccount = await tx.user.create({ data: { name: row.name, email: learnerEmail, passwordHash, role: "LEARNER", forcePasswordChange: true, suspended: admissionStatus === "PENDING" } }); await tx.guardianLink.create({ data: { userId: learnerAccount.id, learnerId: row.id, relation: "Learner" } }); await tx.auditEvent.create({ data: { actorId: user.id, action: user.role === "SECRETARY" ? "ADMISSION_SUBMITTED" : "LEARNER_CREATED", entity: "Learner", entityId: row.id } }); await tx.auditEvent.create({ data: { actorId: user.id, action: "LEARNER_ACCOUNT_CREATED", entity: "User", entityId: learnerAccount.id } }); return { learner: row, learnerEmail }; }); return NextResponse.json({ learner: result.learner, credentials: { email: result.learnerEmail, temporaryPassword } }, { status: 201 }); }
  catch { return NextResponse.json({ error: "A learner could not be admitted. Reload and try again." }, { status: 409 }); }
 }
 

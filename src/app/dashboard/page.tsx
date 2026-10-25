@@ -11,7 +11,7 @@ import ThemeToggle from "@/components/theme-toggle";
 type Metric = { label: string; value: string; note: string; icon: typeof Users };
 const roleTitles: Record<string, string> = { DIRECTOR: "Director", HEAD_TEACHER: "Head Teacher", DEPUTY: "Deputy Head Teacher", SECRETARY: "Secretary", TEACHER: "Teacher" };
 const roleCopy: Record<string, string> = { DIRECTOR: "A clear view of learning, people and school operations.", HEAD_TEACHER: "Lead learning, review admissions and payments, and support your team.", DEPUTY: "Stay on top of attendance and the daily rhythm of school.", SECRETARY: "Manage new admissions and record family payments.", TEACHER: "Your classes, learners and classroom tasks in one place." };
-const hrefs: Record<string, string> = { Overview: "/dashboard", Learners: "/learners", Accounts: "/accounts", Assessments: "/assessments", Attendance: "/attendance", Finance: "/finance", Reports: "/reports", "Audit log": "/audit", Assignments: "/assignments", "Daily teaching log": "/teaching-log", Complaints: "/complaints" };
+const hrefs: Record<string, string> = { Overview: "/dashboard", Learners: "/learners", Accounts: "/accounts", Assessments: "/assessments", Attendance: "/attendance", Finance: "/finance", Reports: "/reports", "Audit log": "/audit", Assignments: "/assignments", "Learning content": "/learning-content", "Daily teaching log": "/teaching-log", Complaints: "/complaints" };
 const kes = (value: number) => new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(value);
 
 export default async function Dashboard() {
@@ -21,7 +21,8 @@ export default async function Dashboard() {
   const user = await db.user.findUnique({ where: { id: session.id } });
   if (!user || user.suspended) redirect("/");
   if (user.forcePasswordChange) redirect("/change-password");
-  if (user.role === "PARENT" || user.role === "LEARNER") redirect("/portal");
+  if (user.role === "PARENT") redirect("/portal");
+  if (user.role === "LEARNER") redirect("/learning");
 
   const role = user.role;
   const today = new Date(new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()) + "T00:00:00.000Z");
@@ -92,7 +93,7 @@ export default async function Dashboard() {
     : role === "HEAD_TEACHER" ? [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Assessments", icon: BookOpen }, { label: "Attendance", icon: CalendarCheck }, { label: "Finance", icon: Wallet }, { label: "Audit log", icon: ScrollText }, { label: "Daily teaching log", icon: ClipboardList }, { label: "Complaints", icon: MessageCircle }]
       : role === "DEPUTY" ? [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Attendance", icon: CalendarCheck }, { label: "Assessments", icon: BookOpen }]
         : role === "SECRETARY" ? [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Finance", icon: Wallet }, { label: "Complaints", icon: MessageCircle }]
-          : [{ label: "Overview", icon: GraduationCap }, { label: "Attendance", icon: CalendarCheck }, { label: "Assessments", icon: BookOpen }, { label: "Learners", icon: Users }, { label: "Assignments", icon: ClipboardList }, { label: "Daily teaching log", icon: FileText }];
+          : [{ label: "Overview", icon: GraduationCap }, { label: "Attendance", icon: CalendarCheck }, { label: "Assessments", icon: BookOpen }, { label: "Learners", icon: Users }, { label: "Assignments", icon: ClipboardList }, { label: "Learning content", icon: BookOpen }, { label: "Daily teaching log", icon: FileText }];
   if (role === "TEACHER" && !await db.classTeacherAssignment.findFirst({ where: { teacherId: user.id }, select: { id: true } })) nav = nav.filter(item => item.label !== "Attendance");
   const showActivity = canInScope(role, "audit", "view", "school");
   const maxGrade = Math.max(...gradeRows.map(item => item._count.id), 1);

@@ -40,6 +40,7 @@ model User {
   classTeacherAssignments ClassTeacherAssignment[]
   teachingLogs       TeachingLog[]
   assignmentsCreated Assignment[]
+  learningResources LearningResource[]
   complaintsOpened  Complaint[] @relation("ComplaintOpener")
   complaintsAssigned Complaint[] @relation("ComplaintAssignee")
   complaintRepliesAuthored ComplaintReply[]
@@ -60,6 +61,7 @@ model Learner {
   credits     FeeCredit[]
   guardians   GuardianLink[]
   assignmentSubmissions AssignmentSubmission[]
+  learningGameAttempts LearningGameAttempt[]
 }
 model AdmissionCounter {
   id         String @id
@@ -148,6 +150,31 @@ model AssignmentSubmission {
   @@unique([assignmentId, learnerId])
   @@index([learnerId, submittedAt])
   @@index([assignmentId, status])
+}
+model LearningResource {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  grade       String
+  subject     String
+  kind        String
+  url         String
+  teacherId   String
+  teacher     User     @relation(fields: [teacherId], references: [id])
+  createdAt   DateTime @default(now())
+  @@index([grade, subject, createdAt])
+  @@index([teacherId, createdAt])
+}
+model LearningGameAttempt {
+  id        String   @id @default(cuid())
+  learnerId String
+  learner   Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  gameKey   String
+  score     Int
+  maxScore  Int
+  createdAt DateTime @default(now())
+  @@index([learnerId, createdAt])
+  @@index([learnerId, gameKey])
 }
 model Complaint {
   id          String   @id @default(cuid())

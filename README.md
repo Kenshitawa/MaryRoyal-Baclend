@@ -46,11 +46,11 @@ Do not reuse demo credentials outside local development.
 - **Secretary:** add learners, which receive an automated `MR-##` admission number and await Head Teacher approval; record cash, M-Pesa, bank or cheque payments, which await confirmation before a receipt is available; log parent, learner or Head Teacher complaints and route them to the right staff member.
 - **Teacher:** open only assigned learners; enter marks for assigned subjects; the seeded Grade 4 class teacher can mark attendance, while other teachers cannot; create assignments, review learner submissions, and submit an end-of-day teaching summary for Head Teacher/Director confirmation.
 - **Parent:** switch between linked children; view their released marks, attendance, fee balances and confirmed receipts; open a complaint chat with the class teacher or school leadership.
-- **Learner:** view their own attendance and released marks; complete assignments, submit answers and see feedback/marks; no fee details or other learner records are exposed.
+- **Learner:** open a grade-tailored learning space with released results, subject progress, marked assignment feedback, teacher-shared video/reading resources and saved educational game scores; submit class assignments. Learners have no fee details, complaints page or access to another learner’s records.
 
 The local AI assignment draft uses Ollama at `http://127.0.0.1:11434` with model `llama3.2` by default. It makes no paid or external AI request. Install Ollama and a local model to enable this optional assistant; assignment creation and learner submission work without it.
 
-All users can open **Profile & security** from the avatar to change their password or update a profile photo. Sessions expire after ten minutes of inactivity. Dark mode is applied before first paint. Parent/learner complaint replies, admissions, fee confirmations, marks and payroll actions are access-controlled and audit logged.
+All users can open **Profile & security** from the avatar to change their password or update a profile photo. Sessions expire after ten minutes of inactivity. Dark mode is applied before first paint. Parent complaint conversations, admissions, learner account activation, fee confirmations, marks and payroll actions are access-controlled and audit logged. A newly admitted learner gets a unique `mr-##@learners.maryroyal.ac.ke` login and a one-time printable credential slip; pending accounts activate after Head Teacher approval.
 
 ## Commands
 

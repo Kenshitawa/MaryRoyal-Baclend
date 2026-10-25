@@ -1,6 +1,6 @@
 import { Role } from "@prisma/client";
 export type Action = "view" | "create" | "update" | "delete" | "approve" | "review" | "release";
-export type Resource = "dashboard" | "accounts" | "learners" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "complaints";
+export type Resource = "dashboard" | "accounts" | "learners" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "complaints";
 export type DataScope = "school" | "assigned" | "linked" | "self" | "learner-identity" | "academic" | "operations" | "finance";
 const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  dashboard: { view: Object.values(Role) },
@@ -18,7 +18,8 @@ const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  exports: { view:[Role.DIRECTOR] },
  teachingLogs: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.TEACHER], create:[Role.TEACHER], approve:[Role.DIRECTOR,Role.HEAD_TEACHER] },
  assignments: { view:[Role.TEACHER,Role.LEARNER], create:[Role.TEACHER], update:[Role.TEACHER] },
- complaints: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER,Role.SECRETARY,Role.PARENT,Role.LEARNER], create:[Role.PARENT,Role.LEARNER,Role.HEAD_TEACHER,Role.SECRETARY], update:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER,Role.SECRETARY,Role.PARENT,Role.LEARNER] }
+ learning: { view:[Role.TEACHER,Role.LEARNER], create:[Role.TEACHER,Role.LEARNER] },
+ complaints: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER,Role.SECRETARY,Role.PARENT], create:[Role.PARENT,Role.HEAD_TEACHER,Role.SECRETARY], update:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER,Role.SECRETARY,Role.PARENT] }
 };
 const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
  dashboard: { school: [Role.DIRECTOR], academic: [Role.HEAD_TEACHER], operations: [Role.DEPUTY], finance: [Role.HEAD_TEACHER,Role.SECRETARY], assigned: [Role.TEACHER], linked: [Role.PARENT], self: [Role.LEARNER] },
@@ -36,7 +37,8 @@ const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
  exports: { school:[Role.DIRECTOR] },
  teachingLogs: { school:[Role.DIRECTOR,Role.HEAD_TEACHER], assigned:[Role.TEACHER] },
  assignments: { assigned:[Role.TEACHER], self:[Role.LEARNER] },
- complaints: { school:[Role.DIRECTOR,Role.HEAD_TEACHER], assigned:[Role.DEPUTY,Role.TEACHER], self:[Role.PARENT,Role.LEARNER,Role.SECRETARY] }
+ learning: { assigned:[Role.TEACHER], self:[Role.LEARNER] },
+ complaints: { school:[Role.DIRECTOR,Role.HEAD_TEACHER], assigned:[Role.DEPUTY,Role.TEACHER], self:[Role.PARENT,Role.SECRETARY] }
 };
 export function can(role: Role, resource: Resource, action: Action): boolean { return matrix[resource][action]?.includes(role) ?? false; }
 export function canInScope(role: Role, resource: Resource, action: Action, scope: DataScope): boolean { return can(role, resource, action) && (scopes[resource][scope]?.includes(role) ?? false); }

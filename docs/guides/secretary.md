@@ -4,7 +4,7 @@ Sign in with `secretary@maryroyal.ac.ke` and the fresh-database password in the 
 
 ## Admissions
 
-Open **Learners → Admit learner**, enter the learner’s name, class and gender, then save. The system assigns the next `MR-##` admission number. The admission stays pending until the Head Teacher approves it. The Director can see the admission and approval audit event.
+Open **Learners → Admit learner**, enter the learner’s name, class and gender, then save. The system assigns the next `MR-##` admission number and creates a learner sign-in account with a unique email in the format `mr-##@learners.maryroyal.ac.ke`. The printed credential slip contains a temporary password shown only on creation. Give it privately to the learner’s guardian. For a pending admission, the account stays disabled until the Head Teacher approves it; the learner must change the password at first sign-in. The Director can see the admission and approval audit event.
 
 ## Fee payments
 
