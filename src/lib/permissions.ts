@@ -1,13 +1,13 @@
 import { Role } from "@prisma/client";
 export type Action = "view" | "create" | "update" | "delete" | "approve" | "review" | "release" | "submit";
-export type Resource = "dashboard" | "accounts" | "staff" | "staffAttendance" | "learners" | "admissions" | "learnerAccounts" | "attendance" | "assessments" | "discipline" | "finance" | "invoices" | "payments" | "payroll" | "feeStructures" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "learningVideos" | "complaints";
+export type Resource = "dashboard" | "accounts" | "staff" | "staffAttendance" | "learners" | "admissions" | "learnerAccounts" | "attendance" | "assessments" | "discipline" | "finance" | "invoices" | "payments" | "payroll" | "feeStructures" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "learningVideos" | "complaints" | "examSessions" | "rubrics" | "feeWaivers";
 export type DataScope = "school" | "assigned" | "linked" | "self" | "learner-identity" | "academic" | "operations" | "finance";
 const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  dashboard: { view: Object.values(Role) },
  accounts: { view: [Role.DIRECTOR], create: [Role.DIRECTOR], update: [Role.DIRECTOR], delete: [Role.DIRECTOR] },
  staff: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.ACCOUNTANT, Role.TEACHER] },
  staffAttendance: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.ACCOUNTANT, Role.TEACHER], create: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY], update: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY] },
- learners: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.TEACHER, Role.PARENT, Role.LEARNER, Role.ACCOUNTANT], update: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY], approve: [Role.HEAD_TEACHER], delete: [Role.DIRECTOR] },
+ learners: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.TEACHER, Role.PARENT, Role.LEARNER, Role.ACCOUNTANT], update: [Role.HEAD_TEACHER, Role.SECRETARY], approve: [Role.HEAD_TEACHER], delete: [Role.DIRECTOR] },
  admissions: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY], create: [Role.DIRECTOR, Role.SECRETARY], update: [Role.DIRECTOR, Role.SECRETARY], submit: [Role.DIRECTOR, Role.SECRETARY], approve: [Role.HEAD_TEACHER] },
  learnerAccounts: { create: [Role.DIRECTOR, Role.SECRETARY] },
  attendance: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER, Role.PARENT, Role.LEARNER], create: [Role.DIRECTOR, Role.TEACHER], update: [Role.DIRECTOR, Role.TEACHER] },
@@ -26,7 +26,10 @@ const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  assignments: { view:[Role.TEACHER,Role.LEARNER], create:[Role.TEACHER], update:[Role.TEACHER] },
  learning: { view:[Role.TEACHER,Role.LEARNER], create:[Role.TEACHER,Role.LEARNER] },
  learningVideos: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER,Role.LEARNER], create:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER], update:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY] },
- complaints: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.PARENT], create:[Role.PARENT], update:[Role.DIRECTOR,Role.HEAD_TEACHER] }
+ complaints: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.PARENT], create:[Role.PARENT], update:[Role.DIRECTOR,Role.HEAD_TEACHER] },
+ examSessions: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER], create: [Role.DEPUTY, Role.HEAD_TEACHER, Role.DIRECTOR], update: [Role.DEPUTY, Role.HEAD_TEACHER, Role.DIRECTOR], approve: [Role.HEAD_TEACHER, Role.DIRECTOR] },
+ rubrics: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER], create: [Role.DEPUTY, Role.HEAD_TEACHER, Role.DIRECTOR], update: [Role.DEPUTY, Role.HEAD_TEACHER, Role.DIRECTOR] },
+ feeWaivers: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.ACCOUNTANT], create: [Role.ACCOUNTANT], approve: [Role.DIRECTOR] }
 };
 const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
  dashboard: { school: [Role.DIRECTOR], academic: [Role.HEAD_TEACHER], operations: [Role.DEPUTY], finance: [Role.HEAD_TEACHER,Role.SECRETARY,Role.ACCOUNTANT], assigned: [Role.TEACHER], linked: [Role.PARENT], self: [Role.LEARNER] },
@@ -52,7 +55,10 @@ const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
  assignments: { assigned:[Role.TEACHER], self:[Role.LEARNER] },
  learning: { assigned:[Role.TEACHER], self:[Role.LEARNER] },
  learningVideos: { school:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY], assigned:[Role.TEACHER], self:[Role.LEARNER] },
- complaints: { school:[Role.DIRECTOR,Role.HEAD_TEACHER], self:[Role.PARENT] }
+ complaints: { school:[Role.DIRECTOR,Role.HEAD_TEACHER], self:[Role.PARENT] },
+ examSessions: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY], assigned: [Role.TEACHER] },
+ rubrics: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER] },
+ feeWaivers: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.ACCOUNTANT] }
 };
 export function can(role: Role, resource: Resource, action: Action): boolean { return matrix[resource][action]?.includes(role) ?? false; }
 export function canInScope(role: Role, resource: Resource, action: Action, scope: DataScope): boolean { return can(role, resource, action) && (scopes[resource][scope]?.includes(role) ?? false); }
