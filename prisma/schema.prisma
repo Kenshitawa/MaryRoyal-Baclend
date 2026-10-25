@@ -28,6 +28,10 @@ model User {
   assignments         TeacherAssignment[]
   assessmentsEntered  Assessment[]       @relation("AssessmentAuthor")
   assessmentHistory   AssessmentHistory[] @relation("AssessmentEditor")
+  invoicesCreated    FeeInvoice[]        @relation("InvoiceCreator")
+  paymentsRecorded   FeePayment[]        @relation("PaymentRecorder")
+  paymentHistory     FeePaymentHistory[] @relation("PaymentEditor")
+  expensesRecorded   FeeExpense[]        @relation("ExpenseRecorder")
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -38,6 +42,8 @@ model Learner {
   archivedAt  DateTime?
   attendance  Attendance[]
   assessments Assessment[]
+  invoices    FeeInvoice[]
+  credits     FeeCredit[]
 }
 model Attendance {
   id        String   @id @default(cuid())
@@ -92,6 +98,95 @@ model AssessmentHistory {
   createdAt    DateTime   @default(now())
   @@index([assessmentId, version])
   @@unique([assessmentId, version])
+}
+model FeeInvoice {
+  id           String        @id @default(cuid())
+  learnerId    String
+  learner      Learner       @relation(fields: [learnerId], references: [id])
+  term         String
+  dueAt        DateTime?
+  status       String        @default("OPEN")
+  creditApplied Int          @default(0)
+  createdById  String
+  createdBy    User          @relation("InvoiceCreator", fields: [createdById], references: [id])
+  createdAt    DateTime      @default(now())
+  lines        InvoiceLine[]
+  payments     FeePayment[]
+  @@unique([learnerId, term])
+  @@index([term, status])
+}
+model InvoiceLine {
+  id          String     @id @default(cuid())
+  invoiceId   String
+  invoice     FeeInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  category    String
+  description String
+  amount      Int
+  @@index([invoiceId])
+}
+model ReceiptCounter {
+  id         String @id
+  lastNumber Int    @default(0)
+}
+model FeePayment {
+  id             String              @id @default(cuid())
+  invoiceId      String
+  invoice        FeeInvoice          @relation(fields: [invoiceId], references: [id])
+  receiptNo      String              @unique
+  amount         Int
+  method         String
+  mpesaCode      String?             @unique
+  reference      String?
+  status         String              @default("RECORDED")
+  voidReason     String?
+  version        Int                 @default(1)
+  recordedById   String
+  recordedBy     User                @relation("PaymentRecorder", fields: [recordedById], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  history        FeePaymentHistory[]
+  credit         FeeCredit?
+  @@index([invoiceId, status])
+  @@index([createdAt])
+}
+model FeeCredit {
+  id              String     @id @default(cuid())
+  learnerId       String
+  learner         Learner    @relation(fields: [learnerId], references: [id])
+  sourcePaymentId String     @unique
+  sourcePayment   FeePayment @relation(fields: [sourcePaymentId], references: [id])
+  amount          Int
+  remaining       Int
+  status          String     @default("AVAILABLE")
+  createdAt       DateTime   @default(now())
+  @@index([learnerId, status])
+}
+model FeePaymentHistory {
+  id          String     @id @default(cuid())
+  paymentId   String
+  payment     FeePayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User       @relation("PaymentEditor", fields: [actorId], references: [id])
+  version     Int
+  amount      Int
+  method      String
+  status      String
+  reason      String?
+  createdAt   DateTime   @default(now())
+  @@unique([paymentId, version])
+  @@index([paymentId, createdAt])
+}
+model FeeExpense {
+  id           String   @id @default(cuid())
+  category     String
+  supplier     String?
+  amount       Int
+  description  String
+  paidAt       DateTime @default(now())
+  enteredById  String
+  enteredBy    User     @relation("ExpenseRecorder", fields: [enteredById], references: [id])
+  createdAt    DateTime @default(now())
+  @@index([paidAt, category])
 }
 model AuditEvent {
   id        String   @id @default(cuid())

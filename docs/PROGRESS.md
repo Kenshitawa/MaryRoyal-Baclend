@@ -20,11 +20,17 @@
 - Tested: Playwright exercises assessment creation, a Grade 9 assignment mismatch/IDOR denial, mark locking, Head Teacher approval and Director release. CBC helpers are in the unit suite.
 - Known issues: grading cutoffs are hard-coded (80/60/40); no deadlines/reopen approval, bulk grid/import, report cards/PDF or parent release portal.
 
-## Phases 4–7 — not complete
-- Built: no finance, operations, Parent/Learner portal, analytics or export screens were added without real backing features.
-- Tested: current checks do not cover finance or later modules.
-- Known issues: fees/payments/receipts, expenses, timetable, discipline, announcements/messages, lesson plans/homework/events, family portals, analytics/exports, exhaustive security testing, performance/accessibility pass and privacy request workflow remain in docs/ROADMAP.md.
-- Next: implement remaining modules in order. The app is not yet suitable for real pupil or finance data.
+## Phase 4 — finance checkpoint (partial)
+- Built: school-scoped invoices and fee lines; KES payments by M-Pesa, cash, bank or cheque; unique M-Pesa codes; transactional sequential receipt numbers; overpayment credits applied to later invoices; versioned payment history; reasoned payment voids; append-only audit events; branded receipt page that prints or saves as PDF; Accountant identity-only learner selection.
+- Tested: Playwright covers invoice, overpayment, credit carry-forward, duplicate M-Pesa rejection, receipt rendering, minimum void reason and successful void. Schema setup, lint, type-check and unit suite passed.
+- Known issues: fee structures/templates, adjustments, Director waiver approval, expenses/payroll, statements and finance PDF/Excel reports are not built. Voiding a payment whose credit was already applied is blocked pending reconciliation. The app is not suitable for real financial data.
+- Next: implement operations modules, then family portals, analytics, hardening and document remaining gaps.
+
+## Phases 5–7 — not complete
+- Built: no backed timetable, discipline, messaging, lessons/resources, family portals, analytics or exports yet.
+- Tested: finance e2e is added; no later module coverage exists.
+- Known issues: later modules and security/performance/accessibility/privacy passes remain in docs/ROADMAP.md.
+- Next: continue implementing, then finalize guides and verified test results. The app is not yet suitable for real pupil or financial data.
 
 ## Phase 8 planning document
 - Built: docs/DEPLOYMENT_GUIDE.md covers future PostgreSQL migration, hosting evaluation, HTTPS, secrets, backups and monitoring. No deployment was performed.
