@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Check, CircleUserRound, KeyRound, LockKeyhole, ShieldAlert, UnlockKeyhole, UserPlus } from "lucide-react";
 
 type Account = { id: string; name: string; email: string; role: string; suspended: boolean; forcePasswordChange: boolean; failedLogins: number };
-const roles = ["DIRECTOR", "HEAD_TEACHER", "DEPUTY", "ACCOUNTANT", "TEACHER", "PARENT", "LEARNER"];
+const roles = ["DIRECTOR", "HEAD_TEACHER", "DEPUTY", "SECRETARY", "TEACHER", "PARENT", "LEARNER"];
 
 export default function AccountDirectory() {
   const [accounts, setAccounts] = useState<Account[]>([]);

@@ -19,7 +19,7 @@ export async function GET() {
   if (!canInScope(user.role, "payroll", "view", "school")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const [entries, staff] = await Promise.all([
     db.payrollEntry.findMany({ include: { staff: { select: { id: true, name: true, email: true } } }, orderBy: [{ period: "desc" }, { staff: { name: "asc" } }], take: 200 }),
-    db.user.findMany({ where: { suspended: false, role: { in: ["DIRECTOR", "HEAD_TEACHER", "DEPUTY", "ACCOUNTANT", "TEACHER"] } }, select: { id: true, name: true }, orderBy: { name: "asc" }, take: 200 })
+    db.user.findMany({ where: { suspended: false, role: { in: ["DIRECTOR", "HEAD_TEACHER", "DEPUTY", "SECRETARY", "TEACHER"] } }, select: { id: true, name: true }, orderBy: { name: "asc" }, take: 200 })
   ]);
   return NextResponse.json({ entries, staff });
 }
@@ -54,11 +54,13 @@ const updateSchema = z.discriminatedUnion("action", [
 export async function PATCH(request: Request) {
   const user = await actor();
   if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
-  if (!canInScope(user.role, "payroll", "update", "school")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
+  if (!canInScope(user.role, "payroll", "update", "school") && !(user.role === "DIRECTOR" && canInScope(user.role, "payroll", "approve", "school"))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success || (parsed.success && parsed.data.action === "update" && parsed.data.deductions >= parsed.data.grossAmount)) return NextResponse.json({ error: "Enter valid payroll details and a reason of at least 10 characters for changes." }, { status: 400 });
+  if (parsed.data.action === "mark-paid" && user.role !== "DIRECTOR") return NextResponse.json({ error: "Director authorization is required to release payroll." }, { status: 403 });
+  if (parsed.data.action === "update" && user.role !== "HEAD_TEACHER") return NextResponse.json({ error: "Only the Head Teacher can prepare payroll changes." }, { status: 403 });
   const old = await db.payrollEntry.findUnique({ where: { id: parsed.data.id } });
   if (!old) return NextResponse.json({ error: "Payroll entry not found." }, { status: 404 });
   if (old.status !== "PENDING") return NextResponse.json({ error: "Paid payroll is locked. Contact the Director for a correction." }, { status: 409 });

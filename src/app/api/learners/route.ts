@@ -14,13 +14,12 @@ export async function GET(request: Request) {
  const q = parsed.data.q?.trim(); let gradeScope: string[] | undefined; let linkedIds: string[] | undefined;
  if (!canInScope(user.role, "learners", "view", "school")) {
   if (canInScope(user.role, "learners", "view", "assigned")) { const assignments=await db.teacherAssignment.findMany({where:{teacherId:user.id},select:{grade:true}}); gradeScope=[...new Set(assignments.map(a=>a.grade))]; }
-  else if (canInScope(user.role, "learners", "view", "learner-identity")) { /* Accountant identity-only scope is enforced by the selected fields below. */ }
+  else if (canInScope(user.role, "learners", "view", "learner-identity")) { /* Reserved for a future explicitly scoped finance identity view. */ }
   else if (canInScope(user.role,"learners","view","linked")||canInScope(user.role,"learners","view","self")) { const links=await db.guardianLink.findMany({where:{userId:user.id},select:{learnerId:true}});linkedIds=links.map(link=>link.learnerId); }
   else return NextResponse.json({ error: "Forbidden" }, { status: 403 });
  }
- const where: Prisma.LearnerWhereInput = { archivedAt: null, ...(gradeScope ? {grade:{in:gradeScope}} : {}), ...(linkedIds ? {id:{in:linkedIds}} : {}), ...(q ? { OR: [{ name: { contains: q } }, { admissionNo: { contains: q } }, { grade: { contains: q } }] } : {}) };
- const safeIdentityOnly = canInScope(user.role, "learners", "view", "learner-identity");
- const learners = await db.learner.findMany({ where, select: { id: true, admissionNo: true, name: true, grade: true, ...(!safeIdentityOnly ? {gender:true} : {}) }, orderBy: { admissionNo: "asc" }, take: parsed.data.take + 1, ...(parsed.data.cursor ? { cursor: { id: parsed.data.cursor }, skip: 1 } : {}) });
+ const where: Prisma.LearnerWhereInput = { archivedAt: null, ...(!canInScope(user.role, "learners", "view", "school") ? { admissionStatus: "APPROVED" } : {}), ...(gradeScope ? {grade:{in:gradeScope}} : {}), ...(linkedIds ? {id:{in:linkedIds}} : {}), ...(q ? { OR: [{ name: { contains: q } }, { admissionNo: { contains: q } }, { grade: { contains: q } }] } : {}) };
+ const learners = await db.learner.findMany({ where, select: { id: true, admissionNo: true, name: true, grade: true, gender:true, admissionStatus:true }, orderBy: { admissionNo: "asc" }, take: parsed.data.take + 1, ...(parsed.data.cursor ? { cursor: { id: parsed.data.cursor }, skip: 1 } : {}) });
  const hasMore = learners.length > parsed.data.take; const rows = learners.slice(0, parsed.data.take); return NextResponse.json({ learners: rows, nextCursor: hasMore ? rows.at(-1)?.id : null });
 }
 export async function POST(request: Request) {
@@ -28,7 +27,7 @@ export async function POST(request: Request) {
  try { assertCan(user.role, "learners", "create"); } catch { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "Learner" } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
  let input: unknown; try { input = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
  const parsed = learnerInput.safeParse(input); if (!parsed.success) return NextResponse.json({ error: "Check the admission number, name, grade, and gender." }, { status: 400 });
- try { const learner = await db.$transaction(async (tx) => { const counter = await tx.admissionCounter.upsert({ where: { id: "global" }, create: { id: "global", lastNumber: 1 }, update: { lastNumber: { increment: 1 } } }); const admissionNo = `MR-${String(counter.lastNumber).padStart(2, "0")}`; const row = await tx.learner.create({ data: { ...parsed.data, admissionNo } }); await tx.auditEvent.create({ data: { actorId: user.id, action: "LEARNER_CREATED", entity: "Learner", entityId: row.id } }); return row; }); return NextResponse.json({ learner }, { status: 201 }); }
+ try { const learner = await db.$transaction(async (tx) => { const counter = await tx.admissionCounter.upsert({ where: { id: "global" }, create: { id: "global", lastNumber: 1 }, update: { lastNumber: { increment: 1 } } }); const admissionNo = `MR-${String(counter.lastNumber).padStart(2, "0")}`; const row = await tx.learner.create({ data: { ...parsed.data, admissionNo, admissionStatus: user.role === "SECRETARY" ? "PENDING" : "APPROVED" } }); await tx.auditEvent.create({ data: { actorId: user.id, action: user.role === "SECRETARY" ? "ADMISSION_SUBMITTED" : "LEARNER_CREATED", entity: "Learner", entityId: row.id } }); return row; }); return NextResponse.json({ learner }, { status: 201 }); }
  catch { return NextResponse.json({ error: "A learner could not be admitted. Reload and try again." }, { status: 409 }); }
 }
 

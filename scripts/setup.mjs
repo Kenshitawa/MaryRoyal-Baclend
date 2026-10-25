@@ -13,7 +13,7 @@ if (envText.includes("replace-this-with-a-long-random-secret-at-least-32-chars")
  console.log("Generated a private 32-byte SESSION_SECRET in .env.");
 }
 process.env.RUST_LOG ??= "info";
-for (const [command, args] of [["npm", ["install"]], ["npx", ["prisma", "db", "push"]], ["npx", ["tsx", "prisma/seed.ts"]]]) {
+for (const [command, args] of [["npm", ["install"]], ["node", ["scripts/migrate-legacy-roles.mjs"]], ["npx", ["prisma", "db", "push"]], ["npx", ["tsx", "prisma/seed.ts"]]]) {
  const win = process.platform === "win32";
  const result = win ? spawnSync("cmd.exe", ["/d", "/s", "/c", `${command} ${args.join(" ")}`], { cwd: root, stdio: "inherit" }) : spawnSync(command, args, { cwd: root, stdio: "inherit" });
  if (result.status !== 0) process.exit(result.status ?? 1);

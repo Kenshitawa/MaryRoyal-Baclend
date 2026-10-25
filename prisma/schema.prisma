@@ -9,7 +9,7 @@ enum Role {
   DIRECTOR
   HEAD_TEACHER
   DEPUTY
-  ACCOUNTANT
+  SECRETARY
   TEACHER
   PARENT
   LEARNER
@@ -37,6 +37,12 @@ model User {
   payrollEntered     PayrollEntry[]      @relation("PayrollRecorder")
   payrollHistory     PayrollHistory[]    @relation("PayrollEditor")
   learnerLinks       GuardianLink[]
+  classTeacherAssignments ClassTeacherAssignment[]
+  teachingLogs       TeachingLog[]
+  assignmentsCreated Assignment[]
+  complaintsOpened  Complaint[] @relation("ComplaintOpener")
+  complaintsAssigned Complaint[] @relation("ComplaintAssignee")
+  complaintRepliesAuthored ComplaintReply[]
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -45,11 +51,15 @@ model Learner {
   grade       String
   gender      String
   archivedAt  DateTime?
+  admissionStatus String @default("APPROVED")
+  admissionApprovedById String?
+  admissionApprovedAt DateTime?
   attendance  Attendance[]
   assessments Assessment[]
   invoices    FeeInvoice[]
   credits     FeeCredit[]
   guardians   GuardianLink[]
+  assignmentSubmissions AssignmentSubmission[]
 }
 model AdmissionCounter {
   id         String @id
@@ -83,6 +93,90 @@ model TeacherAssignment {
   subject   String
   @@unique([teacherId, grade, subject])
   @@index([teacherId, grade])
+}
+model ClassTeacherAssignment {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  grade     String   @unique
+  @@index([teacherId])
+}
+model TeachingLog {
+  id            String   @id @default(cuid())
+  teacherId     String
+  teacher       User     @relation(fields: [teacherId], references: [id])
+  grade         String
+  subject       String
+  topics        String
+  reflection    String?
+  status        String   @default("SUBMITTED")
+  confirmedById String?
+  confirmedAt   DateTime?
+  createdAt     DateTime @default(now())
+  @@index([teacherId, createdAt])
+  @@index([status, createdAt])
+}
+model Assignment {
+  id           String   @id @default(cuid())
+  title        String
+  instructions String
+  grade        String
+  subject      String
+  dueAt        DateTime?
+  maxScore     Int      @default(100)
+  answerKey    String?
+  autoMark     Boolean  @default(false)
+  teacherId    String
+  teacher      User     @relation(fields: [teacherId], references: [id])
+  createdAt    DateTime @default(now())
+  submissions  AssignmentSubmission[]
+  @@index([grade, subject, dueAt])
+  @@index([teacherId, createdAt])
+}
+model AssignmentSubmission {
+  id           String     @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  learnerId    String
+  learner      Learner    @relation(fields: [learnerId], references: [id])
+  response     String
+  score        Int?
+  feedback     String?
+  status       String     @default("SUBMITTED")
+  submittedAt  DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  @@unique([assignmentId, learnerId])
+  @@index([learnerId, submittedAt])
+  @@index([assignmentId, status])
+}
+model Complaint {
+  id          String   @id @default(cuid())
+  subject     String
+  message     String
+  audience    String
+  reporterName String?
+  reporterRole String?
+  status      String   @default("OPEN")
+  openedById  String
+  openedBy    User     @relation("ComplaintOpener", fields: [openedById], references: [id])
+  assignedToId String?
+  assignedTo  User?    @relation("ComplaintAssignee", fields: [assignedToId], references: [id])
+  learnerId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  replies     ComplaintReply[]
+  @@index([openedById, createdAt])
+  @@index([assignedToId, status])
+}
+model ComplaintReply {
+  id          String    @id @default(cuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  message     String
+  createdAt   DateTime  @default(now())
+  @@index([complaintId, createdAt])
 }
 model Assessment {
   id          String             @id @default(cuid())
@@ -159,6 +253,8 @@ model FeePayment {
   mpesaCode      String?             @unique
   reference      String?
   status         String              @default("RECORDED")
+  confirmedById  String?
+  confirmedAt    DateTime?
   voidReason     String?
   version        Int                 @default(1)
   recordedById   String
