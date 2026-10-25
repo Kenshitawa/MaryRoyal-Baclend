@@ -102,7 +102,7 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 
 | Page/component | Current problems | Planned improvements | Status |
 |---|---|---|---|
-| `/learning` / `LearningClient` | Results, resources, assignments and two quiz games exist; not a complete course LMS | Add topic mastery, verified weak-topic videos, progress and offline-friendly content | Audit pending |
+| `/learning` / `LearningClient` | Results, assignments and games exist; full course authoring absent | Add verified official-channel revision videos for weak topics, watched state and accessible playback | KICD video library shipped; LMS expansion and QA pending |
 | `/assignments` / `AssignmentClient` | Submission works; due-date and feedback view needs learner usability review | Improve classwork list, accessible answer entry and return feedback | Audit pending |
 | `/portal` | Learner summary exists in shared page | Keep learner view focused and separate from Parent fee controls | Audit pending |
 | Learner games | Number Quest/Science Explorer record a quiz score | Add grade-level content, feedback and accessible keyboard/mobile play | Audit pending |

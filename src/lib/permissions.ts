@@ -1,6 +1,6 @@
 import { Role } from "@prisma/client";
 export type Action = "view" | "create" | "update" | "delete" | "approve" | "review" | "release" | "submit";
-export type Resource = "dashboard" | "accounts" | "staff" | "learners" | "admissions" | "learnerAccounts" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "complaints";
+export type Resource = "dashboard" | "accounts" | "staff" | "learners" | "admissions" | "learnerAccounts" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "learningVideos" | "complaints";
 export type DataScope = "school" | "assigned" | "linked" | "self" | "learner-identity" | "academic" | "operations" | "finance";
 const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  dashboard: { view: Object.values(Role) },
@@ -22,6 +22,7 @@ const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  teachingLogs: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.TEACHER], create:[Role.TEACHER], approve:[Role.DIRECTOR,Role.HEAD_TEACHER] },
  assignments: { view:[Role.TEACHER,Role.LEARNER], create:[Role.TEACHER], update:[Role.TEACHER] },
  learning: { view:[Role.TEACHER,Role.LEARNER], create:[Role.TEACHER,Role.LEARNER] },
+ learningVideos: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER,Role.LEARNER], create:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER], update:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY] },
  complaints: { view:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.PARENT], create:[Role.PARENT], update:[Role.DIRECTOR,Role.HEAD_TEACHER] }
 };
 const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
@@ -44,6 +45,7 @@ const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
  teachingLogs: { school:[Role.DIRECTOR,Role.HEAD_TEACHER], assigned:[Role.TEACHER] },
  assignments: { assigned:[Role.TEACHER], self:[Role.LEARNER] },
  learning: { assigned:[Role.TEACHER], self:[Role.LEARNER] },
+ learningVideos: { school:[Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY], assigned:[Role.TEACHER], self:[Role.LEARNER] },
  complaints: { school:[Role.DIRECTOR,Role.HEAD_TEACHER], self:[Role.PARENT] }
 };
 export function can(role: Role, resource: Resource, action: Action): boolean { return matrix[resource][action]?.includes(role) ?? false; }

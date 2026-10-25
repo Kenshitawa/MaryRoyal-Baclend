@@ -50,6 +50,8 @@ model User {
   complaintRepliesAuthored ComplaintReply[]
   admissionDrafts AdmissionDraft[] @relation("AdmissionCreator")
   admissionDocuments AdmissionDocument[] @relation("AdmissionUploader")
+  learningVideosAdded LearningVideo[] @relation("LearningVideoAuthor")
+  learningVideoWatches LearningVideoWatch[]
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -70,6 +72,7 @@ model Learner {
   learningGameAttempts LearningGameAttempt[]
   profile LearnerProfile?
   admissionDraft AdmissionDraft?
+  learningVideoWatches LearningVideoWatch[]
 }
 model LearnerProfile {
   id                    String   @id @default(cuid())
@@ -514,4 +517,38 @@ model AuditEvent {
   entityId  String?
   createdAt DateTime @default(now())
   @@index([createdAt])
+}
+
+
+model LearningVideo {
+  id        String                @id @default(cuid())
+  title     String
+  videoId   String                @unique
+  grade     String
+  subject   String
+  strand    String
+  subStrand String?
+  source    String                @default("KICD_EDUTV")
+  status    String                @default("VERIFIED")
+  addedById String
+  addedBy   User                  @relation("LearningVideoAuthor", fields: [addedById], references: [id])
+  createdAt DateTime              @default(now())
+  watches   LearningVideoWatch[]
+
+  @@index([grade, subject, strand, status])
+}
+
+model LearningVideoWatch {
+  id        String        @id @default(cuid())
+  videoId   String
+  video     LearningVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  learnerId String
+  learner   Learner       @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  watchedAt DateTime      @default(now())
+
+  @@unique([videoId, learnerId, userId])
+  @@index([learnerId, watchedAt])
+  @@index([userId, watchedAt])
 }

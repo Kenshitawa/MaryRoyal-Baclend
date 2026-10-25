@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { canInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
 import LearningClient from "./learning-client";
+import VideoLibrary from "@/app/learning-videos/video-library";
 
 export default async function LearningPage() {
   const token = (await cookies()).get("mary_session")?.value;
@@ -23,5 +24,5 @@ export default async function LearningPage() {
     db.learningGameAttempt.findMany({ where: { learnerId: learner.id }, select: { id: true, gameKey: true, score: true, maxScore: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.attendance.findMany({ where: { learnerId: learner.id }, select: { status: true }, orderBy: { date: "desc" }, take: 30 })
   ]);
-  return <PortalFrame active="My learning"><LearningClient learner={learner} assessments={assessments} submissions={submissions} attempts={attempts} attendance={attendance}/></PortalFrame>;
+  return <PortalFrame active="My learning"><div className="space-y-6"><LearningClient learner={learner} assessments={assessments} submissions={submissions} attempts={attempts} attendance={attendance}/><main className="mx-auto max-w-6xl px-4 pb-28 sm:px-6"><VideoLibrary/></main></div></PortalFrame>;
 }
