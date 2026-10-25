@@ -35,6 +35,10 @@ async function main() {
     }
   }
   const learners = await db.learner.findMany({ where: { archivedAt: null }, orderBy: { admissionNo: "asc" } });
+  const parent = await db.user.findUniqueOrThrow({ where: { email: "parent@maryroyal.ac.ke" } });
+  const learnerAccount = await db.user.findUniqueOrThrow({ where: { email: "learner@maryroyal.ac.ke" } });
+  for (const child of learners.slice(0, 2)) await db.guardianLink.upsert({ where: { userId_learnerId: { userId: parent.id, learnerId: child.id } }, create: { userId: parent.id, learnerId: child.id, relation: "Parent" }, update: {} });
+  if (learners[0]) await db.guardianLink.upsert({ where: { userId_learnerId: { userId: learnerAccount.id, learnerId: learners[0].id } }, create: { userId: learnerAccount.id, learnerId: learners[0].id, relation: "Learner" }, update: {} });
   for (const [index, learner] of learners.entries()) {
     for (const subject of ["English", "Mathematics", "Science"]) {
       for (const [termIndex, term] of ["2026 Term 1", "2026 Term 2"].entries()) {

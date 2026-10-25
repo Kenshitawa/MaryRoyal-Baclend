@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 let testLearnerAdmission="";
 let testOutOfScopeLearnerId="";
-test("Director signs in, changes temporary password when required, and manages learners and accounts", async ({ page }) => {
+test("Director signs in, changes temporary password when required, and manages learners and accounts", async ({ page, playwright }) => {
  await page.goto("/");
  await page.getByLabel("Email address").fill("director@maryroyal.ac.ke");
  const login = async (password:string) => { await page.getByLabel("Password").fill(password); const responsePromise=page.waitForResponse(response=>response.url().endsWith("/api/login")); await page.getByRole("button", { name: "Sign in" }).click(); return responsePromise; };
@@ -36,6 +36,11 @@ test("Director signs in, changes temporary password when required, and manages l
  const temporaryPassword=tempText.split(" · ")[1].trim().split(/\s+/)[0];
  expect(temporaryPassword.length).toBeGreaterThanOrEqual(12);
  await expect(page.getByRole("cell", { name: teacherEmail })).toBeVisible();
+ const parentEmail=`parent-${Date.now()}@maryroyal.ac.ke`;
+ await page.getByLabel("Full name").fill("Demo Linked Parent");await page.getByLabel("Email").fill(parentEmail);await page.getByLabel("Role").selectOption("PARENT");await page.getByRole("button",{name:"Create account"}).click();
+ const parentText=await page.getByRole("status").innerText();const parentPassword=parentText.split(" · ")[1].trim().split(/\s+/)[0];
+ const linked=await page.evaluate(async({email,admissionNo})=>{const accounts=await fetch("/api/accounts").then(r=>r.json());const learners=await fetch(`/api/learners?q=${admissionNo}`).then(r=>r.json());const account=accounts.accounts.find((item:{email:string;id:string})=>item.email===email);const learner=learners.learners[0];const response=await fetch("/api/guardians",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:account.id,learnerId:learner.id,relation:"Parent"})});return {status:response.status,name:learner.name}}, {email:parentEmail,admissionNo:testLearnerAdmission});expect(linked.status).toBe(201);
+ const parentApi=await playwright.request.newContext({baseURL:"http://127.0.0.1:3000"});const parentLogin=await parentApi.post("/api/login",{data:{email:parentEmail,password:parentPassword}});expect(parentLogin.ok()).toBeTruthy();const parentChanged=await parentApi.post("/api/change-password",{data:{password:"PortalTest2026!"}});expect(parentChanged.ok()).toBeTruthy();const parentLearners=await parentApi.get("/api/learners");const parentLearnerData=await parentLearners.json() as {learners:Array<{name:string}>};expect(parentLearnerData.learners.map(item=>item.name)).toEqual([linked.name]);const parentPortal=await parentApi.get("/portal");expect(await parentPortal.text()).toContain(linked.name);await parentApi.dispose();
  const outOfScope=await page.evaluate(async(admissionNo)=>{const response=await fetch("/api/learners",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({admissionNo,name:"Scope Test Learner",grade:"Grade 9",gender:"Male"})});return response.json();},`E2E-SCOPE-${Date.now()}`) as {learner:{id:string}};
  testOutOfScopeLearnerId=outOfScope.learner.id;
 });
@@ -58,16 +63,18 @@ test("non-director roles receive only the account and learner access configured 
   const accounts=await api.get("/api/accounts");
   expect(accounts.status(),`${role} must not view accounts`).toBe(403);
   const learners=await api.get("/api/learners");
-  const canViewLearners=["headteacher","deputy","teacher","accountant"].includes(role);
+  const canViewLearners=["headteacher","deputy","teacher","accountant","parent","learner"].includes(role);
   expect(learners.status()).toBe(canViewLearners?200:403);
   if(role==="accountant"&&learners.ok()){
    const result=await learners.json() as {learners:Array<Record<string,unknown>>};
    expect(Object.keys(result.learners[0]??{}).sort()).toEqual(["admissionNo","grade","id","name"]);
   }
   const assessments=await api.get("/api/assessments");
-  const canViewAssessments=["headteacher","deputy","teacher"].includes(role);
+  const canViewAssessments=["headteacher","deputy","teacher","parent","learner"].includes(role);
   expect(assessments.status()).toBe(canViewAssessments?200:403);
-  const finance=await api.get("/api/finance/invoices");expect(finance.status()).toBe(role==="accountant"?200:403);
+  const finance=await api.get("/api/finance/invoices");expect(finance.status()).toBe(["accountant","parent"].includes(role)?200:403);
+  expect((await api.get("/api/guardians")).status()).toBe(403);
+  if(["parent","learner"].includes(role)){const linked=await learners.json() as {learners:Array<{id:string;name:string}>};const linkedIds=new Set(linked.learners.map(row=>row.id));const result=await assessments.json() as {assessments:Array<{learnerId:string;status:string}>};expect(result.assessments.length).toBeGreaterThan(0);expect(result.assessments.every(row=>linkedIds.has(row.learnerId)&&row.status==="RELEASED")).toBeTruthy();const portal=await api.get("/portal");expect(portal.ok()).toBeTruthy();const html=await portal.text();expect(html).toContain(linked.learners[0].name);expect(html).not.toContain("Faith Akoth");if(role==="learner")expect(html).not.toContain("Fee statements");}
   const attendance=await api.get(`/api/attendance?grade=Grade%204&date=${new Date().toISOString().slice(0,10)}`);expect(attendance.status()).toBe(["headteacher","deputy","teacher"].includes(role)?200:403);
   await api.dispose();
  }

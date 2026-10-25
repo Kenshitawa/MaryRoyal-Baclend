@@ -32,11 +32,17 @@
 - Known issues: attendance correction approval/lock window, teacher attendance, timetable/clash checks, discipline, duty/cover, announcements, messaging, lesson plans, homework/resources and calendar are not built.
 - Next: add family linking and role portals, analytics/exports, and the listed operations modules.
 
-## Phases 6–7 — not complete
-- Built: no family portals, analytics, global search, dark mode or exports yet.
-- Tested: 6 Playwright tests, 6 Vitest tests, lint, type-check and production build passed at the Phase 5 checkpoint.
-- Known issues: security/performance/accessibility/privacy pass and remaining feature work are listed in docs/ROADMAP.md.
-- Next: continue feature completion, then finalize guides and verified test results. The app is not suitable for real pupil or financial data.
+## Phase 6 — family access checkpoint (partial)
+- Built: explicit Director-managed parent/learner links; seed parent has two children and learner account its own record; linked child switching; learner portal with attendance and released marks; parent additionally sees scoped fee balances and linked printable receipts; learner gets no finance data; scoped API data and receipt access.
+- Tested: Playwright creates a parent account, links it to the new learner, signs in and verifies that learner-only access; role sweep checks linked data, released result filtering, fee-role access and denies guardian admin endpoints to non-Directors.
+- Known issues: the portal lacks report-card PDFs, homework, notifications, timetable, message channel and editable contact details. Family access needs more exhaustive route/IDOR coverage. Analytics, search, dark mode and exports remain unbuilt.
+- Next: complete other role portals and admin flows, then harden, accessibility/performance review and role guides.
+
+## Phase 7 — not complete
+- Built: phase-specific checks are recorded above; no final security review or exhaustive permission matrix suite is claimed.
+- Tested: 6 Playwright tests, 6 Vitest tests, lint, type-check, setup and production build passed at the Phase 6 checkpoint.
+- Known issues: remaining feature and security work is listed in docs/ROADMAP.md. Do not use real pupil or finance data.
+- Next: continue implementation and hardening. No deployment performed.
 
 ## Phase 8 planning document
 - Built: docs/DEPLOYMENT_GUIDE.md covers future PostgreSQL migration, hosting evaluation, HTTPS, secrets, backups and monitoring. No deployment was performed.

@@ -32,6 +32,7 @@ model User {
   paymentsRecorded   FeePayment[]        @relation("PaymentRecorder")
   paymentHistory     FeePaymentHistory[] @relation("PaymentEditor")
   expensesRecorded   FeeExpense[]        @relation("ExpenseRecorder")
+  learnerLinks       GuardianLink[]
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -44,6 +45,18 @@ model Learner {
   assessments Assessment[]
   invoices    FeeInvoice[]
   credits     FeeCredit[]
+  guardians   GuardianLink[]
+}
+model GuardianLink {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learnerId String
+  learner   Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  relation  String   @default("Guardian")
+  createdAt DateTime @default(now())
+  @@unique([userId, learnerId])
+  @@index([learnerId])
 }
 model Attendance {
   id        String   @id @default(cuid())
