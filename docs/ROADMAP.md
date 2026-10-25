@@ -1,12 +1,15 @@
 # Roadmap
 
-The brief defines a full commercial school information system. The initial workspace was empty; this run established the foundation but cannot safely mark the end-to-end scope complete. Remaining work:
+The initial workspace was empty. The current deliverable establishes a runnable foundation and a limited learner-register workflow, not the complete Mary Royal SMS described in the build brief. Remaining work:
 
-- Expand Prisma schema/migrations to guardians, role grants, classes, assignments, school terms/settings, subjects, payments/invoices, receipts, report approvals, uploads, and all modules. Add database-backed 30-learner/guardian/role seed set.
-- Replace seeded single Director demo with complete demo accounts for all roles. Build Director-only user lifecycle, temporary credential slip, bulk CSV import/preview, password reset/unlock and session revocation.
-- Implement server-side permission and row-scope enforcement for every route/action; current matrix is a starting point only. Add test coverage for every role/resource/action and IDOR attempts. Harden CSRF, security headers/CSP/HSTS, durable login throttling/lockouts, idle timeout and access logging.
-- Build real academic setup, learner/guardian, assignments, attendance, CBE assessments, mark history/locks, review/release, and branded PDF reports.
-- Build fee structures, invoices, payments, unique M-Pesa codes, immutable/voidable receipts, waiver approval, expenses/payroll/financial exports, statements and PDF output.
-- Build operations (clash-checked timetable, cover/duty, discipline, notices, notifications, moderated messages, lesson plans, homework/resources, events), parent/learner portals, scoped analytics, search, CSV/Excel exports, dark mode and PWA/offline support.
-- Add comprehensive e2e role workflows, backup/restore, performance and accessibility audits, error boundaries, privacy notice/data request workflow, guides for all roles and deployment guide.
-- Replace dashboard shortcuts and summary data with role-specific, scope-filtered functional pages. Current demonstration view is not production safe for multiple roles.
+- Expand the Prisma schema/migrations for guardian relationships, class/stream/subject configuration, multi-role grants, teacher assignments, payments/invoices, receipt histories, report approval, and the rest of the domain. Link demo parent/learner accounts to seeded learner records.
+- Finish Director account lifecycle with printable credential slips, bulk import/validation, multi-role assignment, and session revocation. Basic account creation, suspend/reactivate, one-time reset password and failed-login unlock are implemented.
+- Implement server-side permission and row-scope enforcement for every route/action. Add exhaustive test attempts across roles/actions, parent/learner/teacher IDOR checks, and audit-log verification. Harden CSRF, security headers/CSP/HSTS, durable throttling/lockouts and idle timeout.
+- Build academic setup, guardian/learner details, class assignments, attendance, CBC assessment, grade history/locks, report-card approval/release, and branded PDFs.
+- Build fees, invoices, unique M-Pesa payments, immutable/voidable receipts, waivers, expenses/payroll, statements, PDF and CSV/Excel outputs.
+- Build timetable clash detection, duty/cover, discipline, notices/notifications, moderated messages, lesson plans, homework/resources, events and staff attendance.
+- Build scoped Parent and Learner portals; role-specific Teacher, Head Teacher, Deputy and Accountant dashboards; Director/Head Teacher analytics; global search, accessible dark mode and PWA/offline behavior.
+- Complete the six role guides with the finished workflows. Add full e2e role journeys, performance/accessibility checks, backups/restore verification, privacy notice/data request workflow and operational hardening; a deployment planning guide exists but must be aligned with the eventual PostgreSQL implementation.
+- Replace placeholder overview copy and dashboard aggregates with live, role-scoped data as the relevant modules ship.
+
+

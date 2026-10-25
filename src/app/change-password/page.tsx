@@ -1,2 +1,2 @@
-import ChangePassword from "./change-password";
-export default function Page(){return <ChangePassword/>}
+import ChangePasswordForm from "./change-password-form";
+export default function Page(){return <main className="grid min-h-screen place-items-center p-5"><ChangePasswordForm/></main>}

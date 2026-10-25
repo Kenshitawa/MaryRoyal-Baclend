@@ -1,18 +1,27 @@
 # Progress
 
 ## Phase 0 — complete
-- Built: initialized Git and added AGENTS.md, architecture analysis, and decision log.
-- Tested: reviewed operating rules. No app existed at the start.
+- Built: initialized Git, wrote AGENTS.md, architecture analysis and decision log.
+- Tested: reviewed operating rules; initial workspace was empty.
 - Known issues: none for documentation phase.
-- Next: create local app foundation.
 
-## Phases 1–7 — partial foundation only
-- Built: Next.js/TypeScript/Tailwind project scaffold; Prisma starter models; bcrypt credentials, signed HTTP-only session, forced password change path; login audit records; centralized starter role matrix and CBC/fee helpers; responsive school-branded dashboard; initial unit tests; roadmap of deferred work.
-- Tested: dependency installation attempted; currently stalled while fetching platform dependencies from npm registry. No lint/typecheck/tests or local runtime have yet passed.
-- Known issues: requested application is not complete or production-ready. The only seeded account is Director; remaining role workflows and extensive data scoping are not implemented. Dashboard is a prototype summary and must not be exposed to non-director roles before scoped role views exist. No PDFs, imports, CSV export, PWA, e2e suite, complete models, or secure all-routes authorization.
-- Next: get dependencies installed, validate Prisma schema and app build, then continue modules and replace any incomplete UX before production use.
+## Phase 1 — foundation checkpoint (partial)
+- Built: Next.js App Router/TypeScript/Tailwind shell; branded login/dashboard; credentials login with bcrypt, signed HTTP-only sessions, forced password change and audit events; random per-install session secret; basic rate limiting and account lockout; Director account create/list/suspend/reactivate/reset/unlock with one-time generated credentials; centralized role/action and scope matrices; security headers; PWA manifest/logo; 7 seeded role accounts.
+- Tested: `npm run setup`, `npm run lint`, `npm run typecheck`, `npm test` (6 passed), `npm run build`, `npm run test:e2e` (3 passed), `npm run backup`, and `npm audit` (0 vulnerabilities) passed.
+- Known issues: permissions are only applied to implemented routes; session revocation/idle timeout, exhaustive per-route checks, CSP nonce hardening, full account import/multi-role grants and offline service worker remain incomplete. CSP currently allows inline/eval scripts for the framework.
+- Next: complete row-level scopes with linked/assigned records and add required school modules.
 
-### Phase 1 checkpoint
-- Added scaffold, credentials login route, session token helpers, initial admin seed, dashboard prototype, and domain unit test sources.
-- Dependency install is still pending (registry dependency resolution is slow); no successful local runtime or checks have been observed.
-- Security limitation: authorization is not comprehensively applied to dashboard or data endpoints. Treat this app as a prototype; defer use with non-director accounts until scoped routes are implemented.
+## Phase 2 — academic core checkpoint (partial)
+- Built: seeded 30 demo learners; learner register with Director create and Head Teacher/Deputy school-view scopes; search and bounded pagination API; unique admission number; soft archive field; Zod validation; permission/scope check; denial and transactional create audit records.
+- Tested: Playwright covers Director adding a learner, plus role API tests allow the configured school views and deny account/learner access for other roles. Type, lint, unit and build checks passed.
+- Known issues: no guardian relationships, learner profiles, classes, streams, subjects, teacher assignments, or attendance workflow. The UI currently loads only the first 50 learners.
+- Next: implement class/guardian setup, assignments and attendance.
+
+## Phases 3–7 — not complete
+- Built: CBC grading-level and fee balance helpers with unit coverage; no fake pages for unimplemented modules.
+- Tested: helper and permission unit suite passed; the small e2e suite does not cover full role workflows.
+- Known issues: assessment/report cards, finance, operations, family portals, role-specific dashboards/exports, offline PWA, exhaustive security/IDOR testing, performance/accessibility review, privacy request workflow and complete user guides remain in docs/ROADMAP.md.
+- Next: implement remaining modules in order. The app remains an early prototype and is not suitable for real pupil or finance data.
+
+## Phase 8 planning document
+- Built: docs/DEPLOYMENT_GUIDE.md describes future PostgreSQL migration, hosting evaluation, HTTPS, secrets, backups and monitoring. No deployment was performed.
