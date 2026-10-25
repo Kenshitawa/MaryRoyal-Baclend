@@ -9,8 +9,9 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 | `/` — sign in | Branded split layout exists; verify small-screen behavior, focus order, and error recovery | Refine mobile welcome panel, loading/error states, keyboard flow, reduced motion | Audit pending |
 | `/change-password` | Basic one-field form; no password-strength guidance or explicit session feedback | Add inline rules, show/hide control, success/error toast, back navigation safety | Audit pending |
 | `/privacy` | Static notice; no data request workflow | Improve readability and link Director request steps when the workflow exists | Audit pending |
-| `/receipts/[id]` | Browser print flow; no in-app breadcrumb/back control or generated PDF | Add safe back route, branded print layout, QR verification and downloadable PDF | Audit pending |
-| `PortalFrame` | Fixed sidebar, top bar and mobile bottom navigation exist; no universal breadcrumbs/back or unsaved-form guard | Add route-aware breadcrumbs, safe smart back, preserve list scroll/filter state, form leave warning | Audit pending |
+| `/receipts/[id]` | In-app breadcrumb and safe back are present; print-to-PDF only, no QR verification | Add downloadable PDF artifact, QR verification, child context and print QA | U3 navigation shipped; U10 audit pending |
+| `PortalFrame` | Role-aware breadcrumbs, mobile detail back bar, route history, scroll restoration and unsaved-form guard now shared across portal routes | Audit list/filter preservation, browser edge cases, responsive/dark states and focus behavior | U3 core shipped; U10 audit pending |
+| `PageNavigation` | Shared route-aware back/breadcrumb control is in place; browser state can vary after external/deep links | Validate external-entry fallback, query state, and keyboard/screen-reader behavior | U3 core shipped; U10 audit pending |
 | `ThemeToggle` | Persistent light/dark theme exists; shared overrides need contrast review | Verify every page, browser preference and reduced motion in both themes | Audit pending |
 | `IdleSessionGuard` | Ten-minute client timer exists; relies on client events and current session endpoints | Verify timeout and refresh across browser back/forward, improve expiry messaging | Audit pending |
 

@@ -11,7 +11,7 @@ This repository is a local prototype. The Round 2 work improves its authorizatio
 
 ## Still required from Upgrade Round 2
 
-- **Navigation (U3):** consistent breadcrumbs and smart back behavior on every page; URL-backed filters and reliable list/scroll restoration; unsaved-form warnings; explicit browser back/forward coverage across role routes.
+- **Navigation (U3, core implemented):** shared role-aware breadcrumbs, mobile detail back bar, safe parent fallback, in-app route history, scroll restoration and unsaved-form warnings now cover PortalFrame pages and receipts. A role sweep exercises direct page loads, app back, browser back and forward. URL-backed filters/list pagination and QA of routes outside PortalFrame remain for U10.
 - **Admission (U4):** a persisted, autosaving multi-step admission wizard; residence, guardian, emergency contact, pick-up, health, document, consent and fee-handoff data; secure document storage and image crop; required-document checklist; branded downloadable admission PDF and draft/resume workflow. The existing form collects only name, grade and gender.
 - **Profiles (U5):** full learner biography/profile tabs and staff profile data. Medical-note storage, class-teacher-only medical access and medical access audit are not modeled; current learner directory is not the requested full profile.
 - **Attendance/exams/rubrics (U6):** schoolwide learner/staff attendance dashboard, date-range analytics, absentee follow-up, teacher reminders/exports; Deputy exam-session and timetable workflows; active-exam filtering; configurable/versioned rubrics and impact/reopen approval flows.
