@@ -12,7 +12,7 @@ let testAvatarUrl="";
 let attendanceFixture:{learnerId:string;date:string;previousStatus:string|null}|null=null;
 let testLoginIp=1;
 function loginHeaders(){return {"x-forwarded-for":`198.51.100.${testLoginIp++}`};}
-test.beforeAll(async()=>{await cleanupDb.user.updateMany({where:{email:{in:["director@maryroyal.ac.ke","headteacher@maryroyal.ac.ke","deputy@maryroyal.ac.ke","secretary@maryroyal.ac.ke","accountant@maryroyal.ac.ke","teacher@maryroyal.ac.ke","parent@maryroyal.ac.ke","learner@maryroyal.ac.ke"]}},data:{failedLogins:0,suspended:false,suspensionReason:null}});const [gradeNine,assessment]=await Promise.all([cleanupDb.learner.findFirst({where:{grade:"Grade 9",archivedAt:null},select:{id:true}}),cleanupDb.assessment.findFirst({select:{id:true}})]);const probe=gradeNine??await cleanupDb.learner.create({data:{admissionNo:`E2E-ROLE-${Date.now()}`,name:"Role Probe Learner",grade:"Grade 9",gender:"Male",admissionStatus:"APPROVED"},select:{id:true}});testOutOfScopeLearnerId=probe.id;testAssessmentId=assessment?.id??"missing-assessment";});
+test.beforeAll(async()=>{await cleanupDb.user.updateMany({where:{email:{in:["director@maryroyal.ac.ke","headteacher@maryroyal.ac.ke","deputy@maryroyal.ac.ke","secretary@maryroyal.ac.ke","accountant@maryroyal.ac.ke","teacher@maryroyal.ac.ke","parent@maryroyal.ac.ke","learner@maryroyal.ac.ke"]}},data:{failedLogins:0,suspended:false,suspensionReason:null}});const assessment=await cleanupDb.assessment.findFirst({select:{id:true}});const probe=await cleanupDb.learner.create({data:{admissionNo:`E2E-ROLE-${Date.now()}`,name:"Role Probe Learner",grade:"Grade 9",gender:"Male",admissionStatus:"APPROVED"},select:{id:true}});testOutOfScopeLearnerId=probe.id;testAssessmentId=assessment?.id??"missing-assessment";});
 test.afterAll(async()=>{
  if(testAdmissionDraftIds.length){await cleanupDb.admissionDraft.deleteMany({where:{id:{in:testAdmissionDraftIds}}});await Promise.all(testAdmissionDraftIds.filter(id=>/^c[a-z0-9]+$/i.test(id)).map(id=>rm(path.join(process.cwd(),"private-uploads","admissions",id),{recursive:true,force:true})));}
  const testLearners=await cleanupDb.learner.findMany({where:{OR:[{name:{startsWith:"Demo Learner "}},{name:{startsWith:"E2E Secretary "}},{name:"Scope Test Learner"},{name:"Role Probe Learner"},{admissionNo:{startsWith:"E2E-"}}]},select:{id:true}});
@@ -136,7 +136,7 @@ test("non-director roles receive only the account and learner access configured 
   if(role==="accountant"){const directory=await learners.json() as {learners:Array<Record<string,unknown>>};expect(directory.learners.length).toBeGreaterThan(0);expect(directory.learners[0]).not.toHaveProperty("gender");const firstId=String(directory.learners[0].id);const profile=await api.get(`/learners/${firstId}`);expect(profile.ok()).toBeTruthy();const html=await profile.text();expect(html).toContain("Outstanding balance");expect(html).toContain("Parents and guardians");expect(html).not.toContain("Restricted health information");expect(html).not.toContain("Learner timeline");expect(html).not.toContain("Academics and progress");expect(html).not.toContain("Discipline and follow-up");}
   if(["parent","learner","teacher"].includes(role)){const profile=await api.get(`/learners/${testOutOfScopeLearnerId}`,{maxRedirects:0});expect([302,307]).toContain(profile.status());expect(profile.headers().location).toContain("/dashboard");}
   if(role==="teacher"){const teacherUser=await cleanupDb.user.findUnique({where:{email:"teacher@maryroyal.ac.ke"},select:{id:true}});expect(teacherUser).toBeTruthy();const profile=await api.get(`/staff/${teacherUser!.id}`);expect(profile.ok()).toBeTruthy();expect(await profile.text()).toContain("Staff profile");}
-  const staffDirectory=await api.get("/staff",{maxRedirects:0});expect(["director","headteacher"].includes(role)?staffDirectory.ok():[302,307].includes(staffDirectory.status())).toBeTruthy();
+  const staffDirectory=await api.get("/staff");const staffDirectoryHtml=await staffDirectory.text();expect(["director","headteacher"].includes(role)?staffDirectoryHtml.includes("Staff profiles"):!staffDirectoryHtml.includes("Staff profiles"),`${role} staff directory must be Director/Head Teacher only`).toBeTruthy();
   const feeStructures=await api.get("/api/finance/structures");expect(feeStructures.status(),`${role} fee structure read`).toBe(["director","headteacher","secretary","accountant"].includes(role)?200:403);const createFeeStructure=await api.post("/api/finance/structures",{data:{}});expect(createFeeStructure.status(),`${role} fee structure write`).toBe(["director","headteacher"].includes(role)?400:403);const learningVideos=await api.get("/api/learning-videos");expect(learningVideos.status(),`${role} KICD video view`).toBe(["director","headteacher","deputy","teacher","learner"].includes(role)?200:403);
   const addVideo=await api.post("/api/learning-videos",{data:{url:"not-a-video",grade:"Grade 4",subject:"English",strand:"Reading"}});expect(addVideo.status(),`${role} KICD video curation`).toBe(["director","headteacher","deputy","teacher"].includes(role)?400:403);
    const admissionAttempt=await api.post("/api/learners",{data:{admissionNo:`DENY-${role}`,name:"Unauthorized",grade:"Grade 4",gender:"Male"}});expect(admissionAttempt.status()).toBe(["director","secretary"].includes(role)?410:403);
@@ -220,6 +220,7 @@ test("assigned teachers publish work, learners submit it, and school leaders con
 
 test("breadcrumbs, safe back, mobile detail bar and unsaved-form warning work for every role",async({page,playwright})=>{
   test.setTimeout(180_000);
+ await page.addInitScript(()=>window.localStorage.setItem("mary-theme","dark"));
  const roles=[
   {email:"director@maryroyal.ac.ke",home:"/dashboard",target:"/learners",label:"Learners"},
   {email:"headteacher@maryroyal.ac.ke",home:"/dashboard",target:"/assessments",label:"Assessments"},
@@ -238,10 +239,15 @@ test("breadcrumbs, safe back, mobile detail bar and unsaved-form warning work fo
   await page.context().clearCookies();
   await page.context().addCookies((await api.storageState()).cookies);
   await api.dispose();
-  await page.setViewportSize({width:index===0?390:1280,height:844});
+  await page.setViewportSize({width:390,height:844});
   await page.goto(`http://127.0.0.1:3187${role.home}`);
   await page.goto(`http://127.0.0.1:3187${role.target}`);
   await expect(page.getByRole("navigation",{name:"Breadcrumb"})).toContainText(role.label);
+  await expect(page.locator("html")).toHaveAttribute("data-theme","dark");
+  await expect(page.getByRole("link",{name:"Skip to main content"})).toBeAttached();
+  const mobileWidth=await page.evaluate(()=>document.documentElement.scrollWidth);expect(mobileWidth,`${role.email} mobile width`).toBeLessThanOrEqual(390);
+  await expect(page.getByRole("navigation",{name:"Mobile navigation"})).toBeVisible();
+  await page.setViewportSize({width:1280,height:844});await expect(page.getByRole("navigation",{name:"Main navigation"})).toBeVisible();
   await expect(page.getByRole("button",{name:"Go back"}).last()).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>Object.entries(sessionStorage).some(([key,value])=>{if(!key.startsWith("mary-navigation:")||key.endsWith(":scroll"))return false;try{const stack:unknown=JSON.parse(value);return Array.isArray(stack)&&stack.includes(location.pathname)}catch{return false}})),{timeout:15_000}).toBe(true);
   if(index===0){
