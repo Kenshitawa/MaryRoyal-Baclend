@@ -38,7 +38,7 @@ All accounts use the temporary password `MaryRoyal2026!` on a fresh database and
 | Parent | parent@maryroyal.ac.ke |
 | Learner | learner@maryroyal.ac.ke |
 
-Director, Head Teacher and Deputy can view the school register; Teacher sees only assigned grades; Accountant sees learner name, admission number and grade only. Director can add learners. Teachers can enter assigned CBC marks; Head Teacher reviews them and Director releases approved marks. Parent and Learner records are not linked yet. Finance and operations are not implemented. Do not use these shared demo credentials outside local development.
+Director, Head Teacher and Deputy can view the school register; Teacher sees only assigned grades; Accountant sees learner name, admission number and grade only. Director can add learners. Teachers can enter assigned CBC marks; Head Teacher reviews them and Director releases approved marks. Assigned teachers and school leaders can take daily class attendance. Accountant can create invoices, record payments, apply learner credits and issue/void receipts. Parent and Learner records are not linked yet. Do not use these shared demo credentials outside local development.
 
 ## Commands
 
@@ -63,10 +63,10 @@ This is an early prototype, not a complete school management system. Do not stor
 ## Verified local role workflows
 
 - **Director:** sign in and change the temporary password; open **Learners** to add/search a learner; open **Accounts** to create an account and copy its one-time password, suspend/reactivate, reset a password or unlock an account; open **Assessments** to release Head Teacher-approved marks.
-- **Teacher:** sign in; dashboard link **Open CBC assessments**; assigned grades are 4–6 and assigned subjects are English, Mathematics and Science. Enter a Term 3 mark, edit drafts, submit, and confirm submitted marks are locked. A Grade 9 mark attempt is denied.
+- **Teacher:** use **Attendance** for assigned grades 4–6 and set each learner present/absent/late; use **Open CBC assessments** for assigned subjects English, Mathematics and Science. Enter a Term 3 mark, submit it, and confirm submitted marks are locked. Grade 9 attempts are denied.
 - **Head Teacher:** sign in; **Open CBC assessments** shows school marks; approve submitted marks or return them with a reason.
 - **Deputy:** can read the school learner register and assessments; timetable and discipline are not built.
-- **Accountant:** the learner API exposes only learner name, admission number and grade. Finance screens and data are not built.
+- **Accountant:** the learner API exposes only learner name, admission number and grade. Open **Finance** to create an invoice and record an M-Pesa/cash/bank/cheque payment; the system issues a printable receipt, rejects duplicate M-Pesa codes, carries overpayments forward and requires a reason to void a receipt.
 - **Parent:** login works, but no guardian links or family views are implemented.
 - **Learner:** login works, but learner record links and the learner portal are not implemented.
 

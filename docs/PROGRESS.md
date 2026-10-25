@@ -26,11 +26,17 @@
 - Known issues: fee structures/templates, adjustments, Director waiver approval, expenses/payroll, statements and finance PDF/Excel reports are not built. Voiding a payment whose credit was already applied is blocked pending reconciliation. The app is not suitable for real financial data.
 - Next: implement operations modules, then family portals, analytics, hardening and document remaining gaps.
 
-## Phases 5–7 — not complete
-- Built: no backed timetable, discipline, messaging, lessons/resources, family portals, analytics or exports yet.
-- Tested: finance e2e is added; no later module coverage exists.
-- Known issues: later modules and security/performance/accessibility/privacy passes remain in docs/ROADMAP.md.
-- Next: continue implementing, then finalize guides and verified test results. The app is not yet suitable for real pupil or financial data.
+## Phase 5 — operations checkpoint (partial)
+- Built: mobile-first daily attendance register for school leaders and assigned teachers; present/absent/late actions; date selection in EAT; server-side assignment and learner/class IDOR checks; transactional upsert and audit entry.
+- Tested: Playwright covers teacher taking attendance, reading back the register, tampered class/learner denial and access attempts for all seeded roles. Full six-test E2E suite passed.
+- Known issues: attendance correction approval/lock window, teacher attendance, timetable/clash checks, discipline, duty/cover, announcements, messaging, lesson plans, homework/resources and calendar are not built.
+- Next: add family linking and role portals, analytics/exports, and the listed operations modules.
+
+## Phases 6–7 — not complete
+- Built: no family portals, analytics, global search, dark mode or exports yet.
+- Tested: 6 Playwright tests, 6 Vitest tests, lint, type-check and production build passed at the Phase 5 checkpoint.
+- Known issues: security/performance/accessibility/privacy pass and remaining feature work are listed in docs/ROADMAP.md.
+- Next: continue feature completion, then finalize guides and verified test results. The app is not suitable for real pupil or financial data.
 
 ## Phase 8 planning document
 - Built: docs/DEPLOYMENT_GUIDE.md covers future PostgreSQL migration, hosting evaluation, HTTPS, secrets, backups and monitoring. No deployment was performed.

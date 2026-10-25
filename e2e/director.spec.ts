@@ -67,6 +67,8 @@ test("non-director roles receive only the account and learner access configured 
   const assessments=await api.get("/api/assessments");
   const canViewAssessments=["headteacher","deputy","teacher"].includes(role);
   expect(assessments.status()).toBe(canViewAssessments?200:403);
+  const finance=await api.get("/api/finance/invoices");expect(finance.status()).toBe(role==="accountant"?200:403);
+  const attendance=await api.get(`/api/attendance?grade=Grade%204&date=${new Date().toISOString().slice(0,10)}`);expect(attendance.status()).toBe(["headteacher","deputy","teacher"].includes(role)?200:403);
   await api.dispose();
  }
 });
@@ -103,4 +105,8 @@ test("accountant invoices, records M-Pesa, carries credit forward, and voids wit
  const second=await api.post("/api/finance/invoices",{data:{learnerId:learner!.id,term:"2026 Term 2",items:[{category:"TUITION",description:"Prior term tuition",amount:10000}]}});expect(second.status()).toBe(201);const secondData=(await second.json()).invoice as {id:string;creditApplied:number;balance:number};expect(secondData.creditApplied).toBe(2000);expect(secondData.balance).toBe(8000);
  const cash=await api.post("/api/finance/payments",{data:{invoiceId:secondData.id,amount:1000,method:"CASH"}});expect(cash.status()).toBe(201);const cashData=(await cash.json()).payment as {id:string};const noReason=await api.post(`/api/finance/payments/${cashData.id}/void`,{data:{reason:"short"}});expect(noReason.status()).toBe(400);const voided=await api.post(`/api/finance/payments/${cashData.id}/void`,{data:{reason:"Duplicate entry correction"}});expect(voided.ok()).toBeTruthy();
  await api.dispose();
+});
+test("teacher records attendance only for an assigned class and cannot tamper with another class",async({playwright})=>{
+ const api=await playwright.request.newContext({baseURL:"http://127.0.0.1:3000"});let login=await api.post("/api/login",{data:{email:"teacher@maryroyal.ac.ke",password:"PortalTest2026!"}});if(!login.ok())login=await api.post("/api/login",{data:{email:"teacher@maryroyal.ac.ke",password:"MaryRoyal2026!"}});expect(login.ok()).toBeTruthy();if((await login.json()).forcePasswordChange)await api.post("/api/change-password",{data:{password:"PortalTest2026!"}});
+ const learnerData=await (await api.get("/api/learners?take=100")).json() as {learners:Array<{id:string;grade:string}>};const learner=learnerData.learners.find(item=>item.grade==="Grade 4");expect(learner).toBeTruthy();const date=new Date().toISOString().slice(0,10);const saved=await api.post("/api/attendance",{data:{grade:"Grade 4",date,records:[{learnerId:learner!.id,status:"ABSENT"}]}});expect(saved.status()).toBe(200);const register=await api.get(`/api/attendance?grade=Grade%204&date=${date}`);expect(register.ok()).toBeTruthy();const registerData=await register.json() as {learners:Array<{id:string;status:string}>};expect(registerData.learners.find(item=>item.id===learner!.id)?.status).toBe("ABSENT");const idor=await api.post("/api/attendance",{data:{grade:"Grade 9",date,records:[{learnerId:learner!.id,status:"PRESENT"}]}});expect(idor.status()).toBe(403);await api.dispose();
 });
