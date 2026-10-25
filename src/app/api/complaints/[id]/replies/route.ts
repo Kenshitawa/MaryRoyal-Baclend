@@ -12,21 +12,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   const user = await db.user.findUnique({ where: { id: session.id }, select: { id: true, role: true, suspended: true, forcePasswordChange: true } });
   if (!user || user.suspended || user.forcePasswordChange) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
-  const scope = user.role === "DIRECTOR" || user.role === "HEAD_TEACHER" ? "school" : user.role === "PARENT" || user.role === "LEARNER" || user.role === "SECRETARY" ? "self" : "assigned";
-  if (!canInScope(user.role, "complaints", "update", scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!canInScope(user.role, "complaints", "update", "school")) { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "Complaint" } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Write a reply before sending." }, { status: 400 });
   const { id } = await params;
-  const complaint = await db.complaint.findUnique({ where: { id }, select: { id: true, openedById: true, assignedToId: true, status: true } });
+  const complaint = await db.complaint.findUnique({ where: { id }, select: { id: true, status: true } });
   if (!complaint) return NextResponse.json({ error: "Complaint not found." }, { status: 404 });
-  const allowed = scope === "school" || (scope === "self" && complaint.openedById === user.id) || (scope === "assigned" && complaint.assignedToId === user.id);
-  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (complaint.status === "CLOSED" && scope !== "school") return NextResponse.json({ error: "This complaint has been closed by school leadership." }, { status: 409 });
+  if (!canInScope(user.role, "complaints", "view", "school")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const reply = await db.$transaction(async tx => {
     const row = await tx.complaintReply.create({ data: { complaintId: id, authorId: user.id, message: parsed.data.message } });
-    await tx.complaint.update({ where: { id }, data: { status: "OPEN" } });
+    await tx.complaint.update({ where: { id }, data: { status: complaint.status === "RESOLVED" ? "IN_REVIEW" : complaint.status } });
     await tx.auditEvent.create({ data: { actorId: user.id, action: "COMPLAINT_REPLY_SENT", entity: "Complaint", entityId: id } });
     return row;
   });

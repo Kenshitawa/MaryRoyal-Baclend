@@ -10,6 +10,7 @@ enum Role {
   HEAD_TEACHER
   DEPUTY
   SECRETARY
+  ACCOUNTANT
   TEACHER
   PARENT
   LEARNER
@@ -66,6 +67,20 @@ model Learner {
 model AdmissionCounter {
   id         String @id
   lastNumber Int    @default(0)
+}
+model SchoolSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+model CbcLevel {
+  code        String  @id
+  label       String
+  minScore    Float
+  maxScore    Float
+  descriptor  String
+  sortOrder   Int     @unique
+  active      Boolean @default(true)
 }
 model GuardianLink {
   id        String   @id @default(cuid())
@@ -179,6 +194,7 @@ model LearningGameAttempt {
 model Complaint {
   id          String   @id @default(cuid())
   subject     String
+  category    String   @default("OTHER")
   message     String
   audience    String
   reporterName String?

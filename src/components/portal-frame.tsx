@@ -8,13 +8,14 @@ import { readSession } from "@/lib/session";
 import ThemeToggle from "@/components/theme-toggle";
 
 const route: Record<string, string> = { Overview: "/dashboard", Learners: "/learners", Accounts: "/accounts", Assessments: "/assessments", Attendance: "/attendance", Finance: "/finance", Reports: "/reports", "Audit log": "/audit", "My learning": "/learning", "My children": "/portal", Assignments: "/assignments", "Learning content": "/learning-content", "Daily teaching log": "/teaching-log", Complaints: "/complaints" };
-const roleTitle: Record<string, string> = { DIRECTOR: "Director", HEAD_TEACHER: "Head Teacher", DEPUTY: "Deputy Head Teacher", SECRETARY: "Secretary", TEACHER: "Teacher", PARENT: "Parent", LEARNER: "Learner" };
+const roleTitle: Record<string, string> = { DIRECTOR: "Director", HEAD_TEACHER: "Head Teacher", DEPUTY: "Deputy Head Teacher", SECRETARY: "Secretary", ACCOUNTANT: "Accountant", TEACHER: "Teacher", PARENT: "Parent", LEARNER: "Learner" };
 const links: Record<string, { label: string; icon: typeof Users }[]> = {
   DIRECTOR: [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Accounts", icon: ShieldCheck }, { label: "Assessments", icon: BookOpen }, { label: "Attendance", icon: CalendarCheck }, { label: "Finance", icon: Wallet }, { label: "Reports", icon: FileText }, { label: "Audit log", icon: ScrollText }, { label: "Complaints", icon: MessageCircle }],
   HEAD_TEACHER: [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Assessments", icon: BookOpen }, { label: "Attendance", icon: CalendarCheck }, { label: "Finance", icon: Wallet }, { label: "Audit log", icon: ScrollText }, { label: "Daily teaching log", icon: ClipboardList }, { label: "Complaints", icon: MessageCircle }],
-  DEPUTY: [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Attendance", icon: CalendarCheck }, { label: "Assessments", icon: BookOpen }, { label: "Complaints", icon: MessageCircle }],
-  SECRETARY: [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Finance", icon: Wallet }, { label: "Complaints", icon: MessageCircle }],
-  TEACHER: [{ label: "Overview", icon: GraduationCap }, { label: "Attendance", icon: CalendarCheck }, { label: "Assessments", icon: BookOpen }, { label: "Learners", icon: Users }, { label: "Assignments", icon: ClipboardList }, { label: "Learning content", icon: BookOpenCheck }, { label: "Daily teaching log", icon: FileText }, { label: "Complaints", icon: MessageCircle }],
+  DEPUTY: [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Attendance", icon: CalendarCheck }, { label: "Assessments", icon: BookOpen }],
+  SECRETARY: [{ label: "Overview", icon: GraduationCap }, { label: "Learners", icon: Users }, { label: "Finance", icon: Wallet }],
+  ACCOUNTANT: [{ label: "Overview", icon: GraduationCap }, { label: "Finance", icon: Wallet }],
+  TEACHER: [{ label: "Overview", icon: GraduationCap }, { label: "Attendance", icon: CalendarCheck }, { label: "Assessments", icon: BookOpen }, { label: "Learners", icon: Users }, { label: "Assignments", icon: ClipboardList }, { label: "Learning content", icon: BookOpenCheck }, { label: "Daily teaching log", icon: FileText }],
   PARENT: [{ label: "My children", icon: Users }, { label: "Complaints", icon: MessageCircle }], LEARNER: [{ label: "My learning", icon: BookOpen }, { label: "Assignments", icon: ClipboardList }]
 };
 

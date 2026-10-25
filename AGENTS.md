@@ -2,7 +2,7 @@
 
 ## Product and security rules
 - Build a local-first school management system for Mary Royal School, Kisumu, using the stated CBE workflows and KES/EAT context.
-- No public registration. Enforce least privilege on the server for every mutation/read; UI hiding is supplemental. Scope parent/learner/teacher records to linked/assigned learners. The Accountant role is retired: Head Teacher manages school finance/payroll; Secretary handles admissions/payment entry and complaint intake; Director retains approval and oversight. Finance roles must not see academic, discipline, medical, or private family-message data.
+- No public registration. Only the Director manages accounts and roles. Enforce least privilege on the server for every mutation/read; UI hiding is supplemental. Scope parent/learner/teacher records to linked/assigned learners. Secretary handles admissions and records, but only reads fee structure and learner balances. Accountant manages operational finance and must not see grades, discipline, medical, or private family-message data. Head Teacher and Director approve/authorize as configured. Complaints are only Parent → Head Teacher/Director.
 - Validate every external input with Zod, use hashed credentials and HTTP-only session cookies, log sensitive actions append-only, and avoid sensitive values in logs.
 - Protect children’s data, soft archive people with history, use transactions/unique constraints for grades and money, and record material decisions in docs/DECISIONS.md.
 - Use royal blue/white, accessible mobile-first layouts, clear labels, keyboard/focus support, and Mary Royal branding.
@@ -16,7 +16,9 @@ Next.js App Router, strict TypeScript, Tailwind CSS, shadcn-compatible accessibl
 For each phase: read this file; run the app locally; run lint, type-check and available tests; fix failures; append actual built/tested/known/next notes to docs/PROGRESS.md; commit with a clear phase message. Do not claim a check passed unless it ran. If a phase cannot be completed, record precise remaining work in docs/ROADMAP.md and continue.
 
 ## Commands
-- `npm run setup`: install dependencies, migrate and seed local demo data.
+- `npm run setup`: install dependencies, apply the Prisma schema, and create an empty local system with the Director and defaults.
+- `npm run seed:demo`: optional synthetic demo data for development and E2E tests.
+- `npm run reset:fresh`: interactively clear school data while preserving the Director and system defaults; use `-- --yes` only when a reset is explicitly intended.
 - `npm run dev`: local development server.
 - `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`: quality checks.
 - `npm run backup`: create a local database backup.

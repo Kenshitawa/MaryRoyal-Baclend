@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "setup": "node scripts/setup.mjs",
+    "seed:demo": "tsx prisma/seed.ts && tsx prisma/seed-demo.ts",
+    "reset:fresh": "tsx scripts/reset-fresh.ts",
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",

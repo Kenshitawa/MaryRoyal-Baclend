@@ -1,10 +1,10 @@
 # Mary Royal School Management System
 
-Local-first school management system for Mary Royal School, Obunga, Kisumu. This is a prototype; use synthetic demo records only. See [the roadmap](docs/ROADMAP.md) before considering real school data.
+A local-first school administration portal for Mary Royal School, Obunga, Kisumu. It supports role-based access for school leaders, staff, families, and learners. Use synthetic records until the remaining security, privacy, and workflow work in [the roadmap](docs/ROADMAP.md) is complete.
 
-## Requirements and setup
+## Local setup
 
-Install Node.js 20.9+ and npm. First setup needs internet access for package installation. No cloud account is used.
+Install Node.js 20.9 or newer and npm. The first setup needs internet access to install packages. No cloud account or paid service is required.
 
 ### Windows (PowerShell)
 
@@ -13,18 +13,25 @@ npm run setup
 npm run dev
 ```
 
-### macOS or Linux
+### macOS and Linux
 
 ```sh
 npm run setup
 npm run dev
 ```
 
-Open <http://localhost:3000>. Setup installs dependencies, creates `.env` when missing, generates a private `SESSION_SECRET`, migrates retired Accountant accounts to a suspended legacy Head Teacher account, initializes local SQLite, and seeds demo users, 30 learners, invoices, payments, marks and payroll. Setup preserves an existing `.env`.
+Open <http://localhost:3000>. Setup installs dependencies, creates `.env` if needed, generates a local `SESSION_SECRET`, applies the Prisma schema to SQLite, and creates an otherwise empty school with a Director, school identity settings, and CBC grading defaults. Existing local school data is preserved by setup. To explicitly clear it, use `npm run reset:fresh` and type `RESET` at the prompt, or run `npm run reset:fresh -- --yes` when you intend to reset it.
 
-## Demo logins
+The fresh Director account is `director@maryroyal.ac.ke` with temporary password `MaryRoyal2026!`. The Director must change it at first sign-in.
 
-Fresh accounts use `MaryRoyal2026!` and require a password change at first sign-in.
+### Optional synthetic walkthrough data
+
+```sh
+npm run seed:demo
+npm run dev
+```
+
+Every seeded account uses `MaryRoyal2026!` and is prompted to change its password. Demo data is fictional and should be reset before real records are added.
 
 | Role | Email |
 |---|---|
@@ -32,41 +39,41 @@ Fresh accounts use `MaryRoyal2026!` and require a password change at first sign-
 | Head Teacher | headteacher@maryroyal.ac.ke |
 | Deputy Head Teacher | deputy@maryroyal.ac.ke |
 | Secretary | secretary@maryroyal.ac.ke |
+| Accountant | accountant@maryroyal.ac.ke |
 | Teacher | teacher@maryroyal.ac.ke |
 | Parent | parent@maryroyal.ac.ke |
 | Learner | learner@maryroyal.ac.ke |
 
-Do not reuse demo credentials outside local development.
-
 ## Role workflows
 
-- **Director:** review school enrollment, attendance, fee collections/balances and payroll on the dashboard; manage accounts; view all admissions, payment approvals, complaints and audit events; release Head Teacher-approved results; authorize payroll payments.
-- **Head Teacher:** approve Secretary-entered admissions and payments; create invoices and prepare payroll; review marks and approve results for Director release; see attendance across classes; confirm teacher daily teaching logs and review complaints.
-- **Deputy:** review schoolwide attendance and assessments; access the operational dashboard and assigned complaint inbox.
-- **Secretary:** add learners, which receive an automated `MR-##` admission number and await Head Teacher approval; record cash, M-Pesa, bank or cheque payments, which await confirmation before a receipt is available; log parent, learner or Head Teacher complaints and route them to the right staff member.
-- **Teacher:** open only assigned learners; enter marks for assigned subjects; the seeded Grade 4 class teacher can mark attendance, while other teachers cannot; create assignments, review learner submissions, and submit an end-of-day teaching summary for Head Teacher/Director confirmation.
-- **Parent:** switch between linked children; view their released marks, attendance, fee balances and confirmed receipts; open a complaint chat with the class teacher or school leadership.
-- **Learner:** open a grade-tailored learning space with released results, subject progress, marked assignment feedback, teacher-shared video/reading resources and saved educational game scores; submit class assignments. Learners have no fee details, complaints page or access to another learner’s records.
+- **Director:** manage all accounts; oversee learner, fee, attendance, payroll, assessment, and audit data; approve or release controlled school workflows.
+- **Head Teacher:** lead academic work, review/approve admissions and results, approve fee confirmations, and view school finance summaries; cannot create accounts or enter marks.
+- **Deputy Head Teacher:** support school-wide attendance and academic operations. The full exam, timetable, library, discipline, and duty workflows are tracked in the roadmap.
+- **Secretary:** admit and update learner records, explicitly create learner logins where needed, search class lists, and view fee structures and learner fee totals/balances. Secretary cannot record payments, access receipts, or view the complaint inbox.
+- **Accountant:** create invoices, record and correct payments, issue receipts after approval, and manage finance workflows. Finance-only access excludes grades, discipline, medical notes, and private messages.
+- **Teacher:** work with assigned learners/subjects, submit marks, take attendance only when separately assigned as class teacher, create assignments and review submissions, and submit a short teaching log for school-leader confirmation.
+- **Parent:** view only linked children, results, attendance, and fee statements; submit and track complaints directed to the Head Teacher, Director, or both.
+- **Learner:** view their own learning area and records, submit assignments, access teacher-shared grade-specific resources, and play the practice games.
 
-The local AI assignment draft uses Ollama at `http://127.0.0.1:11434` with model `llama3.2` by default. It makes no paid or external AI request. Install Ollama and a local model to enable this optional assistant; assignment creation and learner submission work without it.
-
-All users can open **Profile & security** from the avatar to change their password or update a profile photo. Sessions expire after ten minutes of inactivity. Dark mode is applied before first paint. Parent complaint conversations, admissions, learner account activation, fee confirmations, marks and payroll actions are access-controlled and audit logged. A newly admitted learner gets a unique `mr-##@learners.maryroyal.ac.ke` login and a one-time printable credential slip; pending accounts activate after Head Teacher approval.
+Learner and parent logins are not created automatically at admission. The Secretary or Director can explicitly create a learner login; a parent account can be linked or created through account administration. Temporary passwords are shown once and must be changed at first sign-in.
 
 ## Commands
 
-- `npm run setup` — install, migrate and seed the local database
+- `npm run setup` — install, apply local schema, create Director and school defaults
+- `npm run seed:demo` — add synthetic users and walkthrough data
+- `npm run reset:fresh` — confirm and clear local school records while restoring defaults
 - `npm run dev` — run the local development server
 - `npm run build` — production build
 - `npm run lint` — ESLint
 - `npm run typecheck` — strict TypeScript check
 - `npm test` — Vitest unit suite
-- `npm run test:e2e` — Playwright browser suite
-- `npm run backup` — copy local SQLite database into `backups/`
+- `npm run test:e2e` — seed synthetic data and run Playwright browser checks
+- `npm run backup` — copy the local SQLite database into `backups/`
 
 ## Backup restore
 
 Stop the app, preserve `prisma/dev.db`, and replace it with the selected file in `backups/`. Start the app and verify records. Backups contain children’s information; restrict and encrypt them.
 
-## Status
+## Current status
 
-The system remains an early local prototype, not a school-ready production system. Outstanding work and limits are documented in [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PROGRESS.md](docs/PROGRESS.md). No deployment is performed.
+This remains a local prototype, not a school-ready production system. Important incomplete modules and security limits are listed in [docs/ROADMAP.md](docs/ROADMAP.md). No deployment is performed.

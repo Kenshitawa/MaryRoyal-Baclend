@@ -1,29 +1,32 @@
-# Roadmap
+# Mary Royal SMS — remaining work
 
-The current build is a local prototype. It now includes a scoped login/dashboard and learner register, CBC mark approval/release, parent/learner portals, basic finance and payroll, and new Secretary, class-teacher, daily-log, assignment, and complaint workflows. It is not complete enough for real learner or finance data.
+This repository is a local prototype. The Round 2 work improves its authorization model and fresh-start flow, but does not make it ready for real children’s or financial data.
 
-## Implemented in this checkpoint
+## Round 2 implemented foundations
 
-- Fixed the Next.js root-script ordering error by moving the persistent theme initializer into the root `<head>` with `beforeInteractive`; saved dark mode is applied before the app body renders.
-- Removed Accountant from the Prisma role enum, new-account form and demo logins. `npm run setup` migrates old Accountant users to a suspended Head Teacher legacy account without deleting their history.
-- Added Secretary admissions (`MR-##` numbers, pending Head Teacher approval), Secretary payment intake (pending confirmation, receipt available after confirmation), Head Teacher invoice/payroll preparation, Director payroll authorization, and school oversight/audit visibility.
-- Added a separate Class Teacher assignment. Teachers with subject assignments but no Class Teacher appointment cannot view or submit a register; the seeded teacher is class teacher for Grade 4.
-- Added teacher daily teaching logs, confirmation by Head Teacher/Director, assigned-class assignments, learner submissions, teacher marking and an exact-answer auto-mark option. Optional assignment drafting can use a local Ollama model only.
-- Added parent complaint intake/chat, Secretary complaint logging on behalf of families/Head Teacher, staff routing, replies, and scoped school leader review. Learner complaint navigation and APIs are explicitly denied.
-- Added a grade-tailored Learner learning space, teacher-shared HTTPS video/reading resources, subject progress from released results and marked assignments, saved practice-game scores, and grade-specific Number Quest/Science Explorer games. New admissions create a unique suspended-or-active Learner login and a one-time printable credential slip; Head Teacher approval activates pending accounts.
-- Teacher learner navigation now opens assigned learner rows. Workspace nav uses Next `Link` for client navigation/prefetch. Parent/learner portal no longer repeats a text Sign out action inside its dashboard.
+- Accountant is a distinct role again. Secretary can admit learners and explicitly create learner logins, but has read-only fee totals/balances and cannot record payments or open receipts.
+- Complaint access is limited to Parent, Head Teacher, and Director. Parents can create and track private complaint threads; school leaders can reply and update status.
+- Default setup creates the Director, school identity settings, and CBC EE/ME/AE/BE defaults. Optional `seed:demo` supplies synthetic records; `reset:fresh` requires explicit confirmation and preserves only the Director and defaults.
+- Playwright tests cover the seeded role access matrix for selected APIs, admission/login approval, the Parent complaint channel, Accountant payment workflow, learner-scoped portals and teaching/assignment workflows.
 
-## Remaining work
+## Still required from Upgrade Round 2
 
-- Finish academic configuration: school years/terms/streams/subjects, teacher and class-teacher assignment management UI, CBC grading configuration, assessment rubrics/exam workflows, marks deadlines/reopen approvals, bulk entry, and branded downloadable PDF report cards.
-- Complete finance: configurable fee structures, discounts/bursaries/Director waiver authorization, sequential receipt PDF download, parent payment-method/transaction page, statements/arrears reports, expenses, and accounting exports. The current receipt uses a browser print flow, not a generated PDF file. Credit is created after payment confirmation.
-- Finish payroll approval UX/history correction flows and statutory/payroll reporting. Current payroll is a basic monthly register with Director mark-paid authorization; it is not Kenya statutory payroll.
-- Build the full attendance overview requested for Director/Head Teacher/Deputy, including teacher attendance, class comparison, absentee follow-up and edit approval windows. Current register is learner attendance by grade; only class teachers may mark it.
-- Build Deputy operations: clash-checked timetable, exam timetable/exam rubric approval, lesson plans and schemes of work with Deputy review, teacher cover/duty roster, discipline, textbook library issue/return and school-leader oversight, clubs and events.
-- Extend the learner learning area with downloadable worksheets/local uploads, more interactive CBE activities, parent-visible assignment progress and teacher-managed content editing. Current video resources are secure HTTPS links and cannot be uploaded or hosted locally; game progress is a simple score record. The optional AI draft requires the user to install Ollama and a local model.
-- Add parent/learner separate results and balances pages, visual progress charts, announcements, schedule/homework views, notification preferences, receipt download, and verified multi-guardian flows. Current portal is a basic linked dashboard and complaint thread.
-- Finish Director/Head Teacher analytics, global search, complete CSV/Excel/PDF exports, PWA offline caching, comprehensive mobile/accessibility QA, performance verification on slow 3G, session-wide sign-out/revocation, durable login rate limiting, hardened CSP, and privacy export/deletion workflow.
-- Extend automated authorization tests to every endpoint/action/IDOR combination. Current E2E coverage verifies Secretary admission/payment approval and automatic learner-account activation, learner complaint denial, grade-scoped learning resources and saved game activity, complaint visibility/replies, class-teacher attendance, marks approval/release, payroll authorization, assignment submission/marking, and daily teaching-log confirmation. Add complaint cross-family IDOR checks and broaden API tests to every endpoint/action combination.
-- Verify backup/restore regularly, add database-managed audit immutability, finalize all role guides and review privacy notice/data-retention rules with school leadership before real use.
+- **Navigation (U3):** consistent breadcrumbs and smart back behavior on every page; URL-backed filters and reliable list/scroll restoration; unsaved-form warnings; explicit browser back/forward coverage across role routes.
+- **Admission (U4):** a persisted, autosaving multi-step admission wizard; residence, guardian, emergency contact, pick-up, health, document, consent and fee-handoff data; secure document storage and image crop; required-document checklist; branded downloadable admission PDF and draft/resume workflow. The existing form collects only name, grade and gender.
+- **Profiles (U5):** full learner biography/profile tabs and staff profile data. Medical-note storage, class-teacher-only medical access and medical access audit are not modeled; current learner directory is not the requested full profile.
+- **Attendance/exams/rubrics (U6):** schoolwide learner/staff attendance dashboard, date-range analytics, absentee follow-up, teacher reminders/exports; Deputy exam-session and timetable workflows; active-exam filtering; configurable/versioned rubrics and impact/reopen approval flows.
+- **Complaints (U7):** attachment upload, explicit recipient fan-out for “both,” notification delivery, assignment and full conversation moderation are not implemented. Current one-way Parent-to-leadership access and reply/status workflows are implemented.
+- **KICD learning library (U8):** the learner space has released results, grade-scoped teacher resources and educational quiz games, but no verified KICD-only video curation/catalogue, weak-topic recommendation, watched tracking or official-channel validation. Never present an unverified URL as KICD content.
+- **Finance (U9):** versioned class/term fee structures, optional line items, invoice stepper/preview, approved discount/waiver requests, statements/aging buckets, expense management, collection-method analytics, generated PDFs/QR verification and exportable finance reports are not implemented. Existing invoices are entered manually; receipts use browser print-to-PDF.
+- **Whole-system UX (U10):** page-by-page redesign and visual/accessibility audit across every role, full command-palette search, responsive sortable/paginated tables, dark-mode checks on every view, and comprehensive print behavior remain.
 
-No deployment is performed. Future PostgreSQL and hosting notes remain in `docs/DEPLOYMENT_GUIDE.md`.
+## Other security, operational and data gaps
+
+- Permission tests still do not enumerate every route/action/IDOR for every role. The latest E2E sweep covers selected sensitive endpoints only. Add direct URL and IDOR tests for all nested records, receipt privacy, learner-profile tabs and future modules.
+- Append-only audit is enforced in application workflows, not at the database layer. Login rate limiting is process-local; durable lockout, idle-session revocation/sign-out-all-devices and session/device history need stronger storage and tests.
+- Finish data-subject export/correction/deletion/anonymization workflow, retention controls, approved privacy notice, secure admission-document retention and encrypted backup/restore verification before real data use.
+- The current deployment schema is configured for SQLite. The Round 2 migration is a SQLite incremental migration; PostgreSQL deployment needs a tested provider-specific migration path before a one-line database URL switch can be promised.
+- Assignment auto-marking is exact-answer matching only. Optional AI needs a locally installed Ollama model. No child or school content is sent to a paid/external AI service.
+- Finish `docs/guides/` for the new Accountant role and revise existing role guides for changed permissions and the clean-start walkthrough.
+
+No deployment is performed.
