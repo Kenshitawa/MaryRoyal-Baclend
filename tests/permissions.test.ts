@@ -3,16 +3,16 @@ import { Role } from "@prisma/client";
 import { can, canInScope } from "../src/lib/permissions";
 import { youtubeVideoId } from "../src/lib/learning-videos";
 
-const resources = ["dashboard", "accounts", "staff", "learners", "admissions", "learnerAccounts", "attendance", "assessments", "finance", "invoices", "payments", "payroll", "feeStructures", "audit", "operations", "guardians", "exports", "teachingLogs", "assignments", "learning", "learningVideos", "complaints"] as const;
+const resources = ["dashboard", "accounts", "staff", "staffAttendance", "learners", "admissions", "learnerAccounts", "attendance", "assessments", "discipline", "finance", "invoices", "payments", "payroll", "feeStructures", "audit", "operations", "guardians", "exports", "teachingLogs", "assignments", "learning", "learningVideos", "complaints"] as const;
 const actions = ["view", "create", "update", "delete", "approve", "review", "release", "submit"] as const;
 const grants: Record<Role, string[]> = {
- [Role.DIRECTOR]: ["dashboard:view","accounts:view","accounts:create","accounts:update","accounts:delete","staff:view","learners:view","learners:update","learners:delete","admissions:view","admissions:create","admissions:update","admissions:submit","learnerAccounts:create","attendance:view","attendance:create","attendance:update","assessments:view","assessments:approve","assessments:release","finance:view","invoices:view","invoices:create","payments:view","payments:update","payments:approve","payroll:view","payroll:approve","feeStructures:view","feeStructures:create","feeStructures:update","audit:view","operations:view","operations:create","operations:update","guardians:view","guardians:create","guardians:delete","exports:view","teachingLogs:view","teachingLogs:approve","learningVideos:view","learningVideos:create","learningVideos:update","complaints:view","complaints:update"],
- [Role.HEAD_TEACHER]: ["dashboard:view","learners:view","learners:update","learners:approve","staff:view","admissions:view","admissions:approve","attendance:view","assessments:view","assessments:approve","assessments:review","finance:view","invoices:view","payments:view","payments:approve","payroll:view","payroll:create","payroll:update","feeStructures:view","feeStructures:create","feeStructures:update","audit:view","operations:view","teachingLogs:view","teachingLogs:approve","learningVideos:view","learningVideos:create","learningVideos:update","complaints:view","complaints:update"],
- [Role.DEPUTY]: ["dashboard:view","staff:view","learners:view","attendance:view","assessments:view","operations:view","operations:create","operations:update","learningVideos:view","learningVideos:create","learningVideos:update"],
- [Role.SECRETARY]: ["dashboard:view","staff:view","learners:view","learners:update","admissions:view","admissions:create","admissions:update","admissions:submit","learnerAccounts:create","finance:view","invoices:view","feeStructures:view"],
- [Role.ACCOUNTANT]: ["dashboard:view","staff:view","learners:view","finance:view","invoices:view","invoices:create","payments:view","payments:create","payments:update","feeStructures:view"],
- [Role.TEACHER]: ["dashboard:view","staff:view","learners:view","attendance:view","attendance:create","attendance:update","assessments:view","assessments:create","assessments:update","operations:view","operations:create","operations:update","teachingLogs:view","teachingLogs:create","assignments:view","assignments:create","assignments:update","learning:view","learning:create","learningVideos:view","learningVideos:create"],
- [Role.PARENT]: ["dashboard:view","learners:view","attendance:view","assessments:view","finance:view","invoices:view","payments:view","complaints:create","complaints:view"],
+ [Role.DIRECTOR]: ["dashboard:view","accounts:view","accounts:create","accounts:update","accounts:delete","staff:view","staffAttendance:view","staffAttendance:create","staffAttendance:update","learners:view","learners:update","learners:delete","admissions:view","admissions:create","admissions:update","admissions:submit","learnerAccounts:create","attendance:view","attendance:create","attendance:update","assessments:view","assessments:approve","assessments:release","discipline:view","discipline:create","discipline:update","finance:view","invoices:view","invoices:create","payments:view","payments:update","payments:approve","payroll:view","payroll:approve","feeStructures:view","feeStructures:create","feeStructures:update","audit:view","operations:view","operations:create","operations:update","guardians:view","guardians:create","guardians:delete","exports:view","teachingLogs:view","teachingLogs:approve","learningVideos:view","learningVideos:create","learningVideos:update","complaints:view","complaints:update"],
+ [Role.HEAD_TEACHER]: ["dashboard:view","learners:view","learners:update","learners:approve","staff:view","staffAttendance:view","staffAttendance:create","staffAttendance:update","admissions:view","admissions:approve","attendance:view","assessments:view","assessments:approve","assessments:review","discipline:view","discipline:create","discipline:update","finance:view","invoices:view","payments:view","payments:approve","payroll:view","payroll:create","payroll:update","feeStructures:view","feeStructures:create","feeStructures:update","audit:view","operations:view","teachingLogs:view","teachingLogs:approve","learningVideos:view","learningVideos:create","learningVideos:update","complaints:view","complaints:update"],
+ [Role.DEPUTY]: ["dashboard:view","staff:view","staffAttendance:view","staffAttendance:create","staffAttendance:update","learners:view","admissions:view","attendance:view","assessments:view","discipline:view","discipline:create","discipline:update","operations:view","operations:create","operations:update","learningVideos:view","learningVideos:create","learningVideos:update"],
+ [Role.SECRETARY]: ["dashboard:view","staff:view","staffAttendance:view","learners:view","learners:update","admissions:view","admissions:create","admissions:update","admissions:submit","learnerAccounts:create","finance:view","invoices:view","feeStructures:view"],
+ [Role.ACCOUNTANT]: ["dashboard:view","staff:view","staffAttendance:view","learners:view","finance:view","invoices:view","invoices:create","payments:view","payments:create","payments:update","feeStructures:view"],
+ [Role.TEACHER]: ["dashboard:view","staff:view","staffAttendance:view","learners:view","attendance:view","attendance:create","attendance:update","assessments:view","assessments:create","assessments:update","discipline:view","operations:view","operations:create","operations:update","teachingLogs:view","teachingLogs:create","assignments:view","assignments:create","assignments:update","learning:view","learning:create","learningVideos:view","learningVideos:create"],
+ [Role.PARENT]: ["dashboard:view","learners:view","attendance:view","assessments:view","discipline:view","finance:view","invoices:view","payments:view","complaints:create","complaints:view"],
  [Role.LEARNER]: ["dashboard:view","learners:view","attendance:view","assessments:view","assignments:view","learning:view","learning:create","learningVideos:view"]
 };
 
@@ -29,6 +29,7 @@ describe("permission matrix", () => {
   expect(canInScope(Role.SECRETARY,"admissions","create","school")).toBe(true);
   expect(canInScope(Role.SECRETARY,"admissions","submit","school")).toBe(true);
   expect(canInScope(Role.HEAD_TEACHER,"admissions","approve","school")).toBe(true);
+  expect(canInScope(Role.DEPUTY,"admissions","view","school")).toBe(true);
   expect(can(Role.ACCOUNTANT,"admissions","view")).toBe(false);
   expect(canInScope(Role.SECRETARY,"learnerAccounts","create","school")).toBe(true);
   expect(can(Role.SECRETARY,"accounts","create")).toBe(false);
@@ -81,6 +82,22 @@ describe("permission matrix", () => {
   expect(canInScope(Role.HEAD_TEACHER,"staff","view","school")).toBe(true);
   expect(canInScope(Role.DEPUTY,"staff","view","school")).toBe(false);
   expect(canInScope(Role.LEARNER,"finance","view","linked")).toBe(false);
+ });
+ it("keeps profile enrichment records within their intended roles", () => {
+  for (const role of [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY]) {
+   expect(canInScope(role, "staffAttendance", "view", "school")).toBe(true);
+   expect(canInScope(role, "staffAttendance", "create", "school")).toBe(true);
+   expect(canInScope(role, "discipline", "view", "school")).toBe(true);
+  }
+  for (const role of [Role.SECRETARY, Role.ACCOUNTANT, Role.TEACHER]) {
+   expect(canInScope(role, "staffAttendance", "view", "self")).toBe(true);
+   expect(canInScope(role, "staffAttendance", "view", "school")).toBe(false);
+  }
+  expect(canInScope(Role.TEACHER, "discipline", "view", "assigned")).toBe(true);
+  expect(canInScope(Role.PARENT, "discipline", "view", "linked")).toBe(true);
+  expect(can(Role.ACCOUNTANT, "discipline", "view")).toBe(false);
+  expect(can(Role.LEARNER, "discipline", "view")).toBe(false);
+  expect(canInScope(Role.ACCOUNTANT, "learners", "view", "learner-identity")).toBe(true);
  });
 });
 

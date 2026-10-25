@@ -22,9 +22,9 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 | `/dashboard` — Director | Existing school KPIs and fee/payroll aggregates; fresh-start checklist absent | Add ordered setup checklist, needs-attention panel, trends and setup links | Audit pending |
 | `/accounts` / `AccountDirectory` | Account list/forms exist; import, search, account history and multi-role grant flows absent | Add safe create/reset/suspend dialogs, clear danger colors, bulk import preview and responsive list | Audit pending |
 | `/accounts` / `GuardianLinks` | Basic link management; no phone/ID matching or guardian profile workflow | Add duplicate-aware family linking and link history | Audit pending |
-| `/learners` / `LearnerDirectory` | Directory is searchable but learner profiles/tabs are not yet built | Keep the register focused; open full learner biography and role-scoped profile actions | U4 replaced short form; U5 profile pending |
-| `/learners/[id]` — learner profile | Profile sections had not been built | Role-scoped biography, contacts, residence, health, attendance, released results, fee balances and admission checklist; validate IDOR in browser tests | Implemented; full role QA pending |
-| `/staff` and `/staff/[id]` — staff directory/profile | No staff profile or directory | Director/Head Teacher directory, assignments, teaching notes, last successful sign-in and Director-only payroll history | Implemented; employment data model and full role QA pending |
+| `/learners` / `LearnerDirectory` | Directory is searchable but learner profiles/tabs are not yet built | Keep the register focused; open full learner biography and role-scoped profile actions | U4 replaced short form; U5 profile implemented; U10 visual audit pending |
+| `/learners/[id]` — learner profile | Profile sections were incomplete and role exposure needed review | Role-scoped section navigation, passport photo, biography, family contacts, residence, audited health, attendance, released-result trend charts, fee balances and receipt links, discipline, activity timeline, and protected admission documents; test linked/assigned IDOR | U5 implemented; E2E role QA pending |
+| `/staff` and `/staff/[id]` — staff directory/profile | Employment and staff attendance details were not modeled | Director/Head Teacher directory, staff identity/TSC/qualifications, assignments, teaching notes, sign-in, staff attendance/punctuality, Director-only payroll | U5 implemented; E2E role QA pending |
 | `/admissions` and `/admissions/[id]` | Previously only a short learner form; admission packet was not persisted | Build guided draft/resume, validate each step, securely manage documents, explicit access setup and printable packet | U4 implementation shipped; browser/security QA pending |
 | `/assessments` / `AssessmentWorkspace` | Mark workflow exists; no global exam picker, rubric version display or full report-card print | Add exam context, rubric help, keyboard grid, review states and report output | Audit pending |
 | `/attendance` / `AttendanceClient` | Daily learner overview and class completion are visible; staff view and date range absent | Add date range, stream/gender breakdown, follow-up workflow and staff attendance | Daily overview shipped; remaining U6 work pending |
@@ -39,8 +39,8 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 | Page/component | Current problems | Planned improvements | Status |
 |---|---|---|---|
 | `/dashboard` — Head Teacher | Role dashboard exists; deeper academic comparisons/at-risk panels absent | Add class/subject trends, pending approvals and task links | Audit pending |
-| `/learners` — class register | School list view exists; profile tabs and full class setup absent | Add detail navigation, filters, class/stream context and approved profile access | U5 profile pending |
-| `/learners/[id]` and `/staff/[id]` | No role-aware learner/staff detail screens | Review permitted learner biography and teacher workload without account-management controls | Implemented; full role QA pending |
+| `/learners` — class register | School list view exists; profile tabs and full class setup absent | Add detail navigation, filters, class/stream context and approved profile access | U5 profile implemented; U10 visual audit pending |
+| `/learners/[id]` and `/staff/[id]` | No role-aware learner/staff detail screens | Review permitted learner biography and teacher workload without account-management controls | U5 implemented; full U10 role QA pending |
 | `/assessments` | Review/approve exists; exam and rubric management not built | Add approval queue, rubric versions and released report-card workflow | Audit pending |
 | `/attendance` | Can inspect class registers; no all-class dashboard | Add daily overview, missing registers, absentee follow-up and staff attendance | Audit pending |
 | `/finance` | Read view and payment confirmation exist; fee structure configuration absent | Add fee structure management, waivers/approvals and decision history | Audit pending |
@@ -82,7 +82,7 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 |---|---|---|---|
 | `/dashboard` — Teacher | Assigned-class shortcuts exist; lesson/todo overview is limited | Add timetable, pending marks, work due and teaching-log CTA | Audit pending |
 | `/learners` | Assigned list works; no full profile or easy contact context | Add scoped learner profiles, parent contacts, attendance and subject results | Audit pending |
-| `/learners/[id]` and `/staff/[id]` | No profile views for teacher or self | Show assigned learner details/subject marks and allow a staff member to open only their own staff profile | Implemented; full role QA pending |
+| `/learners/[id]` and `/staff/[id]` | No profile views for teacher or self | Show assigned learner details/subject marks and allow a staff member to open only their own staff profile | U5 implemented; full U10 role QA pending |
 | `/attendance` | Class-teacher-only register exists | Improve one-tap mobile controls, missing status and lock/edit feedback | Audit pending |
 | `/assessments` / `AssessmentWorkspace` | Mark entry/review exists; no active exam context or rubric helper | Add active exam only, rubric labels, bulk/keyboard entry and autosave feedback | Audit pending |
 | `/assignments` / `AssignmentClient` | Create, submit and mark flow works | Improve editor, due-date clarity, class response list and saved-state notifications | Audit pending |

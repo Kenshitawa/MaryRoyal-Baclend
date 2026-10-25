@@ -23,3 +23,7 @@ For each phase: read this file; run the app locally; run lint, type-check and av
 - `npm run dev`: local development server.
 - `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`: quality checks.
 - `npm run backup`: create a local database backup.
+
+## U11 final acceptance
+- U11 is final local acceptance and hardening for the Round 2 request. Run the complete permission/IDOR suite, full Playwright E2E suite, production build, local HTTP smoke checks, and `git diff --check`; fix failures before marking complete.
+- Reconcile every row in `docs/UI_UPGRADE_CHECKLIST.md`, document remaining work precisely in `docs/ROADMAP.md`, and never describe partial features as complete. U11 does not include deployment.

@@ -35,7 +35,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const draft = await db.admissionDraft.findUnique({ where: { id }, include: { documents: { select: { category: true, storageKey: true, contentType: true } }, learner: { select: { id: true, admissionApprovedAt: true } } } });
   if (!draft) return NextResponse.json({ error: "Admission form not found." }, { status: 404 });
-  if (user.role === "SECRETARY" && draft.createdById !== user.id) { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "AdmissionDraft", entityId: id } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   let raw: unknown;
   try { raw = JSON.parse(draft.payload) as unknown; } catch { raw = {}; }
   const parsed = admissionDraftDataSchema.safeParse(raw);
