@@ -18,7 +18,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const video = await db.learningVideo.findFirst({ where: { id, grade: link.learner.grade, status: "VERIFIED" }, select: { id: true } });
   if (!video) return NextResponse.json({ error: "Video not found for your class." }, { status: 404 });
   const watched = await db.$transaction(async (tx) => {
-    const row = await tx.learningVideoWatch.upsert({ where: { videoId_learnerId: { videoId: video.id, learnerId: link.learnerId } }, create: { videoId: video.id, learnerId: link.learnerId, userId: user.id }, update: { watchedAt: new Date(), userId: user.id } });
+    const row = await tx.learningVideoWatch.upsert({ where: { videoId_learnerId_userId: { videoId: video.id, learnerId: link.learnerId, userId: user.id } }, create: { videoId: video.id, learnerId: link.learnerId, userId: user.id }, update: { watchedAt: new Date() } });
     await tx.auditEvent.create({ data: { actorId: user.id, action: "LEARNING_VIDEO_WATCHED", entity: "LearningVideo", entityId: video.id } });
     return row;
   });

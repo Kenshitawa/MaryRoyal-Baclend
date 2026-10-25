@@ -1,6 +1,6 @@
 import { Role } from "@prisma/client";
 export type Action = "view" | "create" | "update" | "delete" | "approve" | "review" | "release" | "submit";
-export type Resource = "dashboard" | "accounts" | "staff" | "learners" | "admissions" | "learnerAccounts" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "learningVideos" | "complaints";
+export type Resource = "dashboard" | "accounts" | "staff" | "learners" | "admissions" | "learnerAccounts" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "feeStructures" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "learningVideos" | "complaints";
 export type DataScope = "school" | "assigned" | "linked" | "self" | "learner-identity" | "academic" | "operations" | "finance";
 const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  dashboard: { view: Object.values(Role) },
@@ -15,6 +15,7 @@ const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  invoices: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY, Role.ACCOUNTANT, Role.PARENT], create: [Role.ACCOUNTANT, Role.DIRECTOR] },
  payments: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.ACCOUNTANT, Role.PARENT], create: [Role.ACCOUNTANT], update: [Role.ACCOUNTANT, Role.DIRECTOR], approve: [Role.HEAD_TEACHER, Role.DIRECTOR] },
  payroll: { view: [Role.DIRECTOR, Role.HEAD_TEACHER], create: [Role.HEAD_TEACHER], update: [Role.HEAD_TEACHER], approve: [Role.DIRECTOR] },
+ feeStructures: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY, Role.ACCOUNTANT], create: [Role.DIRECTOR, Role.HEAD_TEACHER], update: [Role.DIRECTOR, Role.HEAD_TEACHER] },
  audit: { view: [Role.DIRECTOR, Role.HEAD_TEACHER] },
  operations: { view: [Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY,Role.TEACHER], create: [Role.DIRECTOR,Role.DEPUTY,Role.TEACHER], update: [Role.DIRECTOR,Role.DEPUTY,Role.TEACHER] },
  guardians: { view:[Role.DIRECTOR],create:[Role.DIRECTOR],delete:[Role.DIRECTOR] },
@@ -38,6 +39,7 @@ const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
  invoices: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY, Role.ACCOUNTANT], linked: [Role.PARENT] },
  payments: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.ACCOUNTANT], linked: [Role.PARENT] },
  payroll: { school: [Role.DIRECTOR, Role.HEAD_TEACHER] },
+ feeStructures: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY, Role.ACCOUNTANT] },
  audit: { school: [Role.DIRECTOR, Role.HEAD_TEACHER] },
  operations: { school: [Role.DIRECTOR,Role.HEAD_TEACHER,Role.DEPUTY], assigned: [Role.TEACHER] },
  guardians: { school:[Role.DIRECTOR] },

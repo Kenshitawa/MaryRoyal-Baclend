@@ -28,7 +28,8 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 | `/admissions` and `/admissions/[id]` | Previously only a short learner form; admission packet was not persisted | Build guided draft/resume, validate each step, securely manage documents, explicit access setup and printable packet | U4 implementation shipped; browser/security QA pending |
 | `/assessments` / `AssessmentWorkspace` | Mark workflow exists; no global exam picker, rubric version display or full report-card print | Add exam context, rubric help, keyboard grid, review states and report output | Audit pending |
 | `/attendance` / `AttendanceClient` | Daily learner overview and class completion are visible; staff view and date range absent | Add date range, stream/gender breakdown, follow-up workflow and staff attendance | Daily overview shipped; remaining U6 work pending |
-| `/finance` / `FinanceClient` + `PayrollSheet` | Existing payment/invoice/payroll actions; no fee-structure ownership page, aging, expenses or analytics | Add finance dashboard, fee structures, invoice preview, aging, generated PDF/exports | Audit pending |
+| `/finance` / `FinanceClient` + `PayrollSheet` | Invoice/payment/payroll actions work; the finance overview lacks collection analytics, aging and export controls | Add finance dashboard, invoice preview, aging, generated PDF/exports | Audit pending |
+| `/finance/structures` — Head Teacher/Director | Versioned structure editor and read-only structure cards now exist; broad mobile/dark/accessibility visual review pending | Verify effective dates, optional-item preview, responsive editing and audit feedback | U9 built; visual audit pending |
 | `/reports` | Basic register export only | Add filterable school reports with accessible charts and verified exports | Audit pending |
 | `/audit` | Basic table and action filter | Add time/user/entity filters, pagination and export history | Audit pending |
 | `/complaints` / `ComplaintsClient` | Parent thread and leadership reply/status exist; attachments and both-recipient fan-out absent | Improve inbox triage, unread/status clarity, recipient routing, attachment and reply notifications | Audit pending |
@@ -63,7 +64,7 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 |---|---|---|---|
 | `/dashboard` — Secretary | Admission and read-only fee indicators exist; setup guidance is missing | Add admission queue, pending review and clear fee read-only context | Audit pending |
 | `/admissions` / admission | Legacy short form has been retired; fee pricing and pre-existing parent matching still need end-to-end verification | Resume seven-step admission drafts, upload and preview documents, record consent, create or match family access, download and print the branded admission form | U4 implementation shipped; QA pending |
-| `/finance` — read-only | Current finance page hides payment actions but does not yet show fee structures | Show fee structure, paid/balance only, no receipt or payment identifiers | Audit pending |
+| `/finance` — read-only | Secretary has fee totals/balances; fee structures now have a separate read-only view | Show the structure for a class/term and permitted paid/balance only, no receipt or payment identifiers | Audit pending |
 | `/profile` | Shared password/photo profile exists | Verify and polish mobile profile form, success feedback and validation | Audit pending |
 
 ## Accountant
@@ -72,7 +73,7 @@ Status describes the Round 2 visual audit, not whether the route already has a u
 |---|---|---|---|
 | `/dashboard` — Accountant | Generic finance metrics, limited collection analytics | Add collections, outstanding, payment method and arrears panels | Audit pending |
 | `/learners` and `/learners/[id]` | No safe way to select a learner for a fee review | Identity-only directory and fee balances with family, health, grades and discipline withheld | Implemented; verify in full E2E |
-| `/finance` / `FinanceClient` | Invoice/payment creation exists; current list lacks stepper/search/status filters | Add learner search, fee structure snapshots, invoice preview, payment drawer and confirmation states | Audit pending |
+| `/finance` / `FinanceClient` | Invoice/payment creation exists and API can snapshot the approved fee structure; invoice page still permits manual entry and lacks stepper/search/status filters | Add learner search, structure-driven invoice preview, payment drawer and confirmation states | Audit pending |
 | `/receipts/[id]` | Print-to-PDF only; no QR code or downloadable PDF artifact | Add direct PDF download, verification token and polished print view | Audit pending |
 
 ## Teacher

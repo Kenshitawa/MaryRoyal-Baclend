@@ -52,6 +52,7 @@ model User {
   admissionDocuments AdmissionDocument[] @relation("AdmissionUploader")
   learningVideosAdded LearningVideo[] @relation("LearningVideoAuthor")
   learningVideoWatches LearningVideoWatch[]
+  feeStructuresCreated FeeStructure[] @relation("FeeStructureCreator")
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -391,6 +392,9 @@ model FeeInvoice {
   creditApplied Int          @default(0)
   createdById  String
   createdBy    User          @relation("InvoiceCreator", fields: [createdById], references: [id])
+  structureId  String?
+  structure    FeeStructure? @relation(fields: [structureId], references: [id])
+  structureVersion Int?
   createdAt    DateTime      @default(now())
   lines        InvoiceLine[]
   payments     FeePayment[]
@@ -405,6 +409,35 @@ model InvoiceLine {
   description String
   amount      Int
   @@index([invoiceId])
+}
+
+model FeeStructure {
+  id            String              @id @default(cuid())
+  grade         String
+  term          String
+  version       Int
+  effectiveFrom DateTime
+  active        Boolean             @default(true)
+  createdById   String
+  createdBy     User                @relation("FeeStructureCreator", fields: [createdById], references: [id])
+  createdAt     DateTime            @default(now())
+  lines         FeeStructureLine[]
+  invoices      FeeInvoice[]
+
+  @@unique([grade, term, version])
+  @@index([grade, term, active])
+}
+
+model FeeStructureLine {
+  id          String       @id @default(cuid())
+  structureId String
+  structure   FeeStructure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  category    String
+  description String
+  amount      Int
+  optional    Boolean      @default(false)
+
+  @@index([structureId])
 }
 model ReceiptCounter {
   id         String @id
