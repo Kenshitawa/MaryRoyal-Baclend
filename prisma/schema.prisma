@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+enum Role {
+  DIRECTOR
+  HEAD_TEACHER
+  DEPUTY
+  ACCOUNTANT
+  TEACHER
+  PARENT
+  LEARNER
+}
+model User {
+  id                  String       @id @default(cuid())
+  name                String
+  email               String       @unique
+  passwordHash        String
+  role                Role
+  forcePasswordChange Boolean      @default(true)
+  suspended           Boolean      @default(false)
+  failedLogins        Int          @default(0)
+  createdAt           DateTime     @default(now())
+  auditEvents         AuditEvent[]
+}
+model Learner {
+  id          String       @id @default(cuid())
+  admissionNo String       @unique
+  name        String
+  grade       String
+  gender      String
+  archivedAt  DateTime?
+  attendance  Attendance[]
+  assessments Assessment[]
+}
+model Attendance {
+  id        String   @id @default(cuid())
+  learnerId String
+  learner   Learner  @relation(fields: [learnerId], references: [id])
+  date      DateTime
+  status    String
+  @@unique([learnerId, date])
+  @@index([date])
+}
+model Assessment {
+  id        String  @id @default(cuid())
+  learnerId String
+  learner   Learner @relation(fields: [learnerId], references: [id])
+  subject   String
+  score     Float
+  term      String
+  @@index([learnerId, term])
+}
+model AuditEvent {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
