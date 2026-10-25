@@ -30,19 +30,19 @@
 - Built: mobile-first daily attendance register for school leaders and assigned teachers; present/absent/late actions; date selection in EAT; server-side assignment and learner/class IDOR checks; transactional upsert and audit entry.
 - Tested: Playwright covers teacher taking attendance, reading back the register, tampered class/learner denial and access attempts for all seeded roles. Full six-test E2E suite passed.
 - Known issues: attendance correction approval/lock window, teacher attendance, timetable/clash checks, discipline, duty/cover, announcements, messaging, lesson plans, homework/resources and calendar are not built.
-- Next: add family linking and role portals, analytics/exports, and the listed operations modules.
+- Next: add further operations workflows, role analytics/exports and family access.
 
 ## Phase 6 — family access checkpoint (partial)
 - Built: explicit Director-managed parent/learner links; seed parent has two children and learner account its own record; linked child switching; learner portal with attendance and released marks; parent additionally sees scoped fee balances and linked printable receipts; learner gets no finance data; scoped API data and receipt access.
 - Tested: Playwright creates a parent account, links it to the new learner, signs in and verifies that learner-only access; role sweep checks linked data, released result filtering, fee-role access and denies guardian admin endpoints to non-Directors.
-- Known issues: the portal lacks report-card PDFs, homework, notifications, timetable, message channel and editable contact details. Family access needs more exhaustive route/IDOR coverage. Analytics, search, dark mode and exports remain unbuilt.
+- Known issues: the portal lacks report-card PDFs, homework, notifications, timetable, message channel and editable contact details. Family access needs more exhaustive route/IDOR coverage. Analytics, search and dark mode remain unbuilt; the only export is the Director learner-register CSV.
 - Next: complete other role portals and admin flows, then harden, accessibility/performance review and role guides.
 
-## Phase 7 — not complete
-- Built: phase-specific checks are recorded above; no final security review or exhaustive permission matrix suite is claimed.
-- Tested: 6 Playwright tests, 6 Vitest tests, lint, type-check, setup and production build passed at the Phase 6 checkpoint.
-- Known issues: remaining feature and security work is listed in docs/ROADMAP.md. Do not use real pupil or finance data.
-- Next: continue implementation and hardening. No deployment performed.
+## Phase 7 — hardening checkpoint (partial)
+- Built: centralized matrix now separates assessment review/release permissions; mark patch/workflow routes reject unauthorized roles before record lookup; Director-only CSV export escapes spreadsheet formulas and logs exports; Director/Head Teacher audit viewer; public privacy notice; expanded direct API role/action tests.
+- Tested: 6 Playwright tests include forbidden writes for every seeded non-Director role, linked learner scope, unauthorized assessment workflow/edit behavior, guardian endpoints, export denial and audit visibility. 6 Vitest tests exhaustively check role/resource/action grants. Setup, lint, type-check, production build, local login HTTP check, backup and `npm audit` (0 vulnerabilities) passed.
+- Known issues: this is not a full security certification or a test of every route/IDOR combination. Login throttling is in-memory, sessions lack idle timeout and revocation, CSP uses unsafe-inline/eval, privacy request workflow, database-enforced audit immutability and broader business modules remain incomplete. Do not use real pupil or finance data.
+- Next: complete remaining features and security/privacy work in docs/ROADMAP.md. No deployment performed.
 
 ## Phase 8 planning document
 - Built: docs/DEPLOYMENT_GUIDE.md covers future PostgreSQL migration, hosting evaluation, HTTPS, secrets, backups and monitoring. No deployment was performed.

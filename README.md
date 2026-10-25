@@ -63,11 +63,14 @@ This is an early prototype, not a complete school management system. Do not stor
 ## Verified local role workflows
 
 - **Director:** sign in and change the temporary password; open **Learners** to add/search a learner; open **Accounts** to create an account and copy its one-time password, suspend/reactivate, reset a password or unlock an account; open **Assessments** to release Head Teacher-approved marks.
+- **Director:** use Accounts → **Parent and learner links** to grant/revoke child access; **Reports** downloads an audited learner CSV; **Audit log** filters recent sensitive actions.
 - **Teacher:** use **Attendance** for assigned grades 4–6 and set each learner present/absent/late; use **Open CBC assessments** for assigned subjects English, Mathematics and Science. Enter a Term 3 mark, submit it, and confirm submitted marks are locked. Grade 9 attempts are denied.
 - **Head Teacher:** sign in; **Open CBC assessments** shows school marks; approve submitted marks or return them with a reason.
 - **Deputy:** can read the school learner register and assessments; timetable and discipline are not built.
 - **Accountant:** the learner API exposes only learner name, admission number and grade. Open **Finance** to create an invoice and record an M-Pesa/cash/bank/cheque payment; the system issues a printable receipt, rejects duplicate M-Pesa codes, carries overpayments forward and requires a reason to void a receipt.
 - **Parent:** open the family portal to switch between linked children, see attendance, released marks, fee balances and linked receipts. The seeded demo Parent has two children.
 - **Learner:** open the learner portal to see their linked record, attendance and released marks. Fee data is not shown.
+
+The sign-in page links to the informational **Privacy notice**. This prototype does not provide a workflow for formal data access/correction/deletion requests.
 
 The e2e suite covers Director account/learner/family-link work, unauthenticated denial, resource access for every seeded non-Director role, linked child scope, attendance IDOR denial, finance invoice/payment/credit/receipt workflows, assignment mismatch denial, mark submission lock, Head Teacher approval and Director release. Remaining items in docs/ROADMAP.md are not implemented.

@@ -1,3 +1,3 @@
 # Deputy Head Teacher guide
 
-Use `deputy@maryroyal.ac.ke` and the local temporary password in README. Change it at first sign-in. The configured view is read-only learner and assessment data; the dashboard provides **Open CBC assessments**. Timetable, duty roster, attendance overview, discipline, cover and promotion workflows are not implemented.
+Use `deputy@maryroyal.ac.ke` and the local temporary password in README. Change it at first sign-in. The configured view includes school learner and assessment records and the daily attendance register. The dashboard links to **CBC assessments** and **Daily attendance**. Timetable, duty roster, discipline, cover and promotion workflows are not implemented.
