@@ -1,3 +1,5 @@
 # Teacher guide
 
-Teacher demo access is not yet seeded. Attendance entry, assigned class scopes, CBC marks, lesson planning, homework and parent messaging are not available in this build.
+Use `teacher@maryroyal.ac.ke` and the local temporary password in README. Change it at first sign-in. From the dashboard, choose **Open CBC assessments**. Marks are visible only for grades and subjects assigned to this account. Select the term, enter a learner score and optional strand, competency and comment, then save the draft. CBC level maps from the score automatically. Edit a draft or returned mark; submit when ready. Submitted marks are locked pending Head Teacher review.
+
+Assignments are seeded for Grades 4–6 in English, Mathematics and Science. Lesson plans, attendance, homework, parent messaging and upload tools are not implemented yet.

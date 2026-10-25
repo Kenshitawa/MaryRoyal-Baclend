@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+let testLearnerAdmission="";
+let testOutOfScopeLearnerId="";
 test("Director signs in, changes temporary password when required, and manages learners and accounts", async ({ page }) => {
  await page.goto("/");
  await page.getByLabel("Email address").fill("director@maryroyal.ac.ke");
@@ -15,7 +17,8 @@ test("Director signs in, changes temporary password when required, and manages l
  await expect(page.getByRole("heading", { name: /Good morning/ })).toBeVisible();
  await page.goto("/learners");
  await page.getByRole("button", { name: "Add learner" }).click();
- await page.getByLabel("Admission number").fill(`E2E-${Date.now()}`);
+ testLearnerAdmission=`E2E-${Date.now()}`;
+ await page.getByLabel("Admission number").fill(testLearnerAdmission);
  const learnerName=`Demo Learner ${Date.now()}`;
  await page.getByLabel("Learner name").fill(learnerName);
  await page.getByLabel("Grade").selectOption("Grade 4");
@@ -33,6 +36,8 @@ test("Director signs in, changes temporary password when required, and manages l
  const temporaryPassword=tempText.split(" · ")[1].trim().split(/\s+/)[0];
  expect(temporaryPassword.length).toBeGreaterThanOrEqual(12);
  await expect(page.getByRole("cell", { name: teacherEmail })).toBeVisible();
+ const outOfScope=await page.evaluate(async(admissionNo)=>{const response=await fetch("/api/learners",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({admissionNo,name:"Scope Test Learner",grade:"Grade 9",gender:"Male"})});return response.json();},`E2E-SCOPE-${Date.now()}`) as {learner:{id:string}};
+ testOutOfScopeLearnerId=outOfScope.learner.id;
 });
 test("unauthenticated users cannot read learner data", async ({ request }) => {
  const response = await request.get("/api/learners");
@@ -53,8 +58,39 @@ test("non-director roles receive only the account and learner access configured 
   const accounts=await api.get("/api/accounts");
   expect(accounts.status(),`${role} must not view accounts`).toBe(403);
   const learners=await api.get("/api/learners");
-  const canViewSchoolRegister=["headteacher","deputy"].includes(role);
-  expect(learners.status()).toBe(canViewSchoolRegister?200:403);
+  const canViewLearners=["headteacher","deputy","teacher","accountant"].includes(role);
+  expect(learners.status()).toBe(canViewLearners?200:403);
+  if(role==="accountant"&&learners.ok()){
+   const result=await learners.json() as {learners:Array<Record<string,unknown>>};
+   expect(Object.keys(result.learners[0]??{}).sort()).toEqual(["admissionNo","grade","id","name"]);
+  }
+  const assessments=await api.get("/api/assessments");
+  const canViewAssessments=["headteacher","deputy","teacher"].includes(role);
+  expect(assessments.status()).toBe(canViewAssessments?200:403);
   await api.dispose();
  }
+});
+test("teacher marks require assignment, Head Teacher approval, and Director release", async ({ playwright }) => {
+ async function login(email:string,passwords:string[]){
+  const api=await playwright.request.newContext({baseURL:"http://127.0.0.1:3000"});let response;
+  for(const password of passwords){response=await api.post("/api/login",{data:{email,password}});if(response.ok())break;}
+  expect(response?.ok(),`${email} login`).toBeTruthy();
+  if(response?.ok()&&(await response.json()).forcePasswordChange){const changed=await api.post("/api/change-password",{data:{password:"PortalTest2026!"}});expect(changed.ok(),`${email} first password change`).toBeTruthy();}
+  return api;
+ }
+ const teacher=await login("teacher@maryroyal.ac.ke",["PortalTest2026!","MaryRoyal2026!"]);
+ const learnerResult=await teacher.get("/api/learners?take=100");expect(learnerResult.ok()).toBeTruthy();
+ const learnerData=await learnerResult.json() as {learners:Array<{id:string;admissionNo:string;grade:string}>};
+ const learner=learnerData.learners.find(item=>item.admissionNo===testLearnerAdmission);expect(learner).toBeTruthy();
+ const idor=await teacher.post("/api/assessments",{data:{learnerId:testOutOfScopeLearnerId,subject:"English",score:60,term:"2026 Term 3"}});expect(idor.status()).toBe(403);
+ const created=await teacher.post("/api/assessments",{data:{learnerId:learner!.id,subject:"English",score:77,term:"2026 Term 3",strand:"Reading",competency:"Reads with understanding",comment:"Good progress."}});
+ expect(created.status()).toBe(201);const assessment=(await created.json()).assessment as {id:string};
+ const submitted=await teacher.post(`/api/assessments/${assessment.id}/workflow`,{data:{action:"submit"}});expect(submitted.status()).toBe(200);
+ const locked=await teacher.patch("/api/assessments",{data:{id:assessment.id,score:80}});expect(locked.status()).toBe(409);
+ const head=await login("headteacher@maryroyal.ac.ke",["PortalTest2026!","MaryRoyal2026!"]);
+ const approved=await head.post(`/api/assessments/${assessment.id}/workflow`,{data:{action:"approve"}});expect(approved.status()).toBe(200);
+ const director=await login("director@maryroyal.ac.ke",["MaryRoyalTest2026!","MaryRoyal2026!"]);
+ const released=await director.post(`/api/assessments/${assessment.id}/workflow`,{data:{action:"release"}});expect(released.status()).toBe(200);
+ const final=await director.get("/api/assessments?term=2026%20Term%203");const finalData=await final.json() as {assessments:Array<{id:string;status:string}>};expect(finalData.assessments.find(row=>row.id===assessment.id)?.status).toBe("RELEASED");
+ await teacher.dispose();await head.dispose();await director.dispose();
 });

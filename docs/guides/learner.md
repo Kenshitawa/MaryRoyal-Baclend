@@ -1,3 +1,3 @@
 # Learner guide
 
-Learner demo access is not yet seeded. Learner portal and child-specific learning records are not available in this build.
+Use `learner@maryroyal.ac.ke` and the local temporary password in README. Change it at first sign-in. Learner-to-record linking and the learning portal are not implemented, so this account cannot view assessment or attendance records yet.

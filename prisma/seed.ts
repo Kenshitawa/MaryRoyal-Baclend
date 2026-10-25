@@ -28,5 +28,23 @@ async function main() {
     const admissionNo = `MR-2026-${String(index + 1).padStart(3, "0")}`;
     await db.learner.upsert({ where: { admissionNo }, create: { admissionNo, name, grade, gender }, update: {} });
   }
+  const teacher = await db.user.findUniqueOrThrow({ where: { email: "teacher@maryroyal.ac.ke" } });
+  for (const grade of ["Grade 4", "Grade 5", "Grade 6"]) {
+    for (const subject of ["English", "Mathematics", "Science"]) {
+      await db.teacherAssignment.upsert({ where: { teacherId_grade_subject: { teacherId: teacher.id, grade, subject } }, create: { teacherId: teacher.id, grade, subject }, update: {} });
+    }
+  }
+  const learners = await db.learner.findMany({ where: { archivedAt: null }, orderBy: { admissionNo: "asc" } });
+  for (const [index, learner] of learners.entries()) {
+    for (const subject of ["English", "Mathematics", "Science"]) {
+      for (const [termIndex, term] of ["2026 Term 1", "2026 Term 2"].entries()) {
+        if (await db.assessment.findFirst({ where: { learnerId: learner.id, subject, term } })) continue;
+        const score = 45 + ((index * 7 + subject.length * 3 + termIndex * 5) % 51);
+        const status = termIndex === 0 ? "RELEASED" : "DRAFT";
+        const assessment = await db.assessment.create({ data: { learnerId: learner.id, enteredById: teacher.id, subject, score, term, strand: subject === "Mathematics" ? "Number" : "Communication and collaboration", competency: `Apply ${subject.toLowerCase()} skills`, comment: "Keep practising and asking thoughtful questions.", status } });
+        await db.assessmentHistory.create({ data: { assessmentId: assessment.id, actorId: teacher.id, version: 1, newScore: score } });
+      }
+    }
+  }
 }
 main().finally(() => db.$disconnect());

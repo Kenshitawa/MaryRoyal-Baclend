@@ -1,3 +1,5 @@
 # Head Teacher guide
 
-Head Teacher demo access is not yet seeded. Report approval/release, marks deadlines, class assignment, schemes review and academic analytics are planned and not available in this build. Do not create a non-Director account directly in the database for real data until role and record scopes are enforced on all routes.
+Use `headteacher@maryroyal.ac.ke` and the local temporary password in README. Change it at first sign-in. From the dashboard choose **Open CBC assessments**. Review submitted marks, approve or return them with a reason. Approved results are not visible to families; final release is a Director action. The current review applies to individual assessment entries, not a generated report card.
+
+The school-wide learner register is read-only. Account creation and finance editing are unavailable. Class assignment administration, deadlines, schemes review and academic analytics are not implemented.

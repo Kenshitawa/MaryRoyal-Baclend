@@ -1,15 +1,13 @@
 # Roadmap
 
-The initial workspace was empty. The current deliverable establishes a runnable foundation and a limited learner-register workflow, not the complete Mary Royal SMS described in the build brief. Remaining work:
+The current build is a local prototype with login/account administration, a learner register and a scoped CBC mark workflow. It is not the complete Mary Royal SMS from the brief and is not ready for real learner or finance data.
 
-- Expand the Prisma schema/migrations for guardian relationships, class/stream/subject configuration, multi-role grants, teacher assignments, payments/invoices, receipt histories, report approval, and the rest of the domain. Link demo parent/learner accounts to seeded learner records.
-- Finish Director account lifecycle with printable credential slips, bulk import/validation, multi-role assignment, and session revocation. Basic account creation, suspend/reactivate, one-time reset password and failed-login unlock are implemented.
-- Implement server-side permission and row-scope enforcement for every route/action. Add exhaustive test attempts across roles/actions, parent/learner/teacher IDOR checks, and audit-log verification. Harden CSRF, security headers/CSP/HSTS, durable throttling/lockouts and idle timeout.
-- Build academic setup, guardian/learner details, class assignments, attendance, CBC assessment, grade history/locks, report-card approval/release, and branded PDFs.
-- Build fees, invoices, unique M-Pesa payments, immutable/voidable receipts, waivers, expenses/payroll, statements, PDF and CSV/Excel outputs.
-- Build timetable clash detection, duty/cover, discipline, notices/notifications, moderated messages, lesson plans, homework/resources, events and staff attendance.
-- Build scoped Parent and Learner portals; role-specific Teacher, Head Teacher, Deputy and Accountant dashboards; Director/Head Teacher analytics; global search, accessible dark mode and PWA/offline behavior.
-- Complete the six role guides with the finished workflows. Add full e2e role journeys, performance/accessibility checks, backups/restore verification, privacy notice/data request workflow and operational hardening; a deployment planning guide exists but must be aligned with the eventual PostgreSQL implementation.
-- Replace placeholder overview copy and dashboard aggregates with live, role-scoped data as the relevant modules ship.
-
-
+- Expand data models for guardians, full learner details, school years/terms, formal classes/streams/subjects and multi-role grants. Link demo parent/learner accounts to children.
+- Finish Director accounts with printable credential slips, bulk CSV/Excel import validation, role grants and session revocation. Basic create, suspend/reactivate, reset and unlock work.
+- Complete server-side authorization and row scoping for every route/action. Test all role/action combinations, linked child and assigned class IDOR attempts, audit access and data exports. Add durable rate limits, idle timeout, CSP nonce policy and privacy/access workflows.
+- Finish academic setup and attendance, including teacher assignments managed by the Director/Head Teacher, class registers, edit approval and attendance follow-up.
+- Complete CBC configuration, deadlines/reopen approval, strand/competency catalog, bulk marks entry/import, immutable history review, term report cards, PDF branding and released-results family access.
+- Build fee structures, invoices, unique M-Pesa payment codes, partial/overpayment handling, immutable/voidable receipts, waivers, expenses/payroll, statements and PDF/Excel reports.
+- Build clash-checked timetable, duty/cover, discipline, notifications/announcements, moderated messages, lesson plans, homework/resources and events.
+- Complete Parent and Learner portals with secure guardian links; build role-specific analytics, search, exports and real notifications.
+- Add offline PWA caching, accessibility and performance reviews, backup/restore verification, privacy notice/data requests, finished role guides and operational hardening. docs/DEPLOYMENT_GUIDE.md is a later planning guide only.

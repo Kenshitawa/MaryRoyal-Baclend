@@ -38,7 +38,7 @@ All accounts use the temporary password `MaryRoyal2026!` on a fresh database and
 | Parent | parent@maryroyal.ac.ke |
 | Learner | learner@maryroyal.ac.ke |
 
-Only Director and Head Teacher/Deputy learner-register access is configured in this prototype (only Director can add records). Other role accounts can sign in but their dashboards and requested role workflows are not yet implemented. Do not use these shared demo credentials outside local development.
+Director, Head Teacher and Deputy can view the school register; Teacher sees only assigned grades; Accountant sees learner name, admission number and grade only. Director can add learners. Teachers can enter assigned CBC marks; Head Teacher reviews them and Director releases approved marks. Parent and Learner records are not linked yet. Finance and operations are not implemented. Do not use these shared demo credentials outside local development.
 
 ## Commands
 
@@ -57,5 +57,17 @@ Stop the app. Preserve the current `prisma/dev.db`, then replace it with the sel
 
 ## Status
 
-This is not a complete school management system and is not ready for real learner or finance data. See `docs/PROGRESS.md`, `docs/ROADMAP.md`, and `docs/guides/` for current implementation and remaining work.
+This is an early prototype, not a complete school management system. Do not store real learner or financial data in it. See `docs/PROGRESS.md`, `docs/ROADMAP.md`, and `docs/guides/` for verified features and outstanding work.
 
+
+## Verified local role workflows
+
+- **Director:** sign in and change the temporary password; open **Learners** to add/search a learner; open **Accounts** to create an account and copy its one-time password, suspend/reactivate, reset a password or unlock an account; open **Assessments** to release Head Teacher-approved marks.
+- **Teacher:** sign in; dashboard link **Open CBC assessments**; assigned grades are 4–6 and assigned subjects are English, Mathematics and Science. Enter a Term 3 mark, edit drafts, submit, and confirm submitted marks are locked. A Grade 9 mark attempt is denied.
+- **Head Teacher:** sign in; **Open CBC assessments** shows school marks; approve submitted marks or return them with a reason.
+- **Deputy:** can read the school learner register and assessments; timetable and discipline are not built.
+- **Accountant:** the learner API exposes only learner name, admission number and grade. Finance screens and data are not built.
+- **Parent:** login works, but no guardian links or family views are implemented.
+- **Learner:** login works, but learner record links and the learner portal are not implemented.
+
+The e2e suite covers Director account/learner work, unauthenticated denial, resource access for every seeded non-Director role, assignment mismatch denial, mark submission lock, Head Teacher approval and Director release. The remaining workflows listed in docs/ROADMAP.md have not been tested because they are not built.

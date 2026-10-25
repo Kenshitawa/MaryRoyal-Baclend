@@ -10,3 +10,4 @@
 - 2026-10-25: This checkpoint exposes learner directory data only to Director, Head Teacher and Deputy because other role-to-record assignments are not yet modeled.
 - 2026-10-25: Prisma SQLite setup runs with `RUST_LOG=info` because the bundled Prisma schema engine otherwise returned an empty Schema engine error in this Windows environment.
 - 2026-10-25: Keep the local prototype honest about incomplete CBE, finance, operations and family portals; do not enable generic actions that would imply those workflows work.
+- 2026-10-25: Use 80/60/40 as the initial EE/ME/AE boundaries (below 40 is BE); thresholds remain configurable work for the grading module and should be confirmed with school leadership before real grading.

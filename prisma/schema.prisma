@@ -15,16 +15,19 @@ enum Role {
   LEARNER
 }
 model User {
-  id                  String       @id @default(cuid())
+  id                  String             @id @default(cuid())
   name                String
-  email               String       @unique
+  email               String             @unique
   passwordHash        String
   role                Role
-  forcePasswordChange Boolean      @default(true)
-  suspended           Boolean      @default(false)
-  failedLogins        Int          @default(0)
-  createdAt           DateTime     @default(now())
+  forcePasswordChange Boolean            @default(true)
+  suspended           Boolean            @default(false)
+  failedLogins        Int                @default(0)
+  createdAt           DateTime           @default(now())
   auditEvents         AuditEvent[]
+  assignments         TeacherAssignment[]
+  assessmentsEntered  Assessment[]       @relation("AssessmentAuthor")
+  assessmentHistory   AssessmentHistory[] @relation("AssessmentEditor")
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -45,14 +48,50 @@ model Attendance {
   @@unique([learnerId, date])
   @@index([date])
 }
-model Assessment {
-  id        String  @id @default(cuid())
-  learnerId String
-  learner   Learner @relation(fields: [learnerId], references: [id])
+model TeacherAssignment {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  grade     String
   subject   String
-  score     Float
-  term      String
+  @@unique([teacherId, grade, subject])
+  @@index([teacherId, grade])
+}
+model Assessment {
+  id          String             @id @default(cuid())
+  learnerId   String
+  learner     Learner            @relation(fields: [learnerId], references: [id])
+  enteredById String?
+  enteredBy   User?              @relation("AssessmentAuthor", fields: [enteredById], references: [id])
+  subject     String
+  score       Float
+  term        String
+  strand      String?
+  competency  String?
+  comment     String?
+  reviewComment String?
+  status      String             @default("DRAFT")
+  version     Int                @default(1)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  history     AssessmentHistory[]
   @@index([learnerId, term])
+  @@index([enteredById, term])
+  @@index([status, term])
+  @@unique([learnerId, subject, term])
+}
+model AssessmentHistory {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  actorId      String
+  actor        User       @relation("AssessmentEditor", fields: [actorId], references: [id])
+  version      Int
+  oldScore     Float?
+  newScore     Float
+  createdAt    DateTime   @default(now())
+  @@index([assessmentId, version])
+  @@unique([assessmentId, version])
 }
 model AuditEvent {
   id        String   @id @default(cuid())
