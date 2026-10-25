@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { makeSession } from "@/lib/session";
+import { makeActivitySession, makeSession } from "@/lib/session";
 const schema = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(200) });
 export async function POST(request: Request) {
  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
@@ -22,5 +22,6 @@ export async function POST(request: Request) {
  await db.auditEvent.create({ data: { actorId: user.id, action: "LOGIN_SUCCEEDED", entity: "User", entityId: user.id } });
  const response = NextResponse.json({ ok: true, forcePasswordChange: user.forcePasswordChange });
  response.cookies.set("mary_session", await makeSession(user), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 8 });
+ response.cookies.set("mary_activity", await makeActivitySession(user.id), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 600 });
  return response;
 }

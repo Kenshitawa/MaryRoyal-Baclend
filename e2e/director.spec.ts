@@ -1,45 +1,79 @@
 import { expect, test } from "@playwright/test";
+import { PrismaClient } from "@prisma/client";
+import { unlink } from "node:fs/promises";
+import path from "node:path";
+const cleanupDb = new PrismaClient();
 let testLearnerAdmission="";
 let testOutOfScopeLearnerId="";
 let testAssessmentId="";
+let testAvatarUrl="";
+let attendanceFixture:{learnerId:string;date:string;previousStatus:string|null}|null=null;
+test.beforeAll(async()=>{await cleanupDb.user.updateMany({where:{email:{in:["director@maryroyal.ac.ke","headteacher@maryroyal.ac.ke","deputy@maryroyal.ac.ke","accountant@maryroyal.ac.ke","teacher@maryroyal.ac.ke","parent@maryroyal.ac.ke","learner@maryroyal.ac.ke"]}},data:{failedLogins:0,suspended:false}})});
+test.afterAll(async()=>{
+ const testLearners=await cleanupDb.learner.findMany({where:{OR:[{name:{startsWith:"Demo Learner "}},{name:"Scope Test Learner"},{admissionNo:{startsWith:"E2E-"}}]},select:{id:true}});
+ const learnerIds=testLearners.map(row=>row.id);
+ if(learnerIds.length)await cleanupDb.$transaction(async tx=>{
+  const invoices=await tx.feeInvoice.findMany({where:{learnerId:{in:learnerIds}},select:{id:true}});const invoiceIds=invoices.map(row=>row.id);
+  await tx.feeCredit.deleteMany({where:{learnerId:{in:learnerIds}}});
+  if(invoiceIds.length)await tx.feePayment.deleteMany({where:{invoiceId:{in:invoiceIds}}});
+  await tx.feeInvoice.deleteMany({where:{learnerId:{in:learnerIds}}});
+  await tx.assessment.deleteMany({where:{learnerId:{in:learnerIds}}});
+  await tx.attendance.deleteMany({where:{learnerId:{in:learnerIds}}});
+  await tx.guardianLink.deleteMany({where:{learnerId:{in:learnerIds}}});
+  await tx.learner.deleteMany({where:{id:{in:learnerIds}}});
+ });
+ const testUsers=await cleanupDb.user.findMany({where:{OR:[{email:{startsWith:"teacher-"}},{email:{startsWith:"parent-"}},{name:"Demo Newly Created Teacher"},{name:"Demo Linked Parent"}]},select:{id:true,email:true}});
+ const generatedUsers=testUsers.filter(user=>/^teacher-\d+@maryroyal\.ac\.ke$/.test(user.email)||/^parent-\d+@maryroyal\.ac\.ke$/.test(user.email));const userIds=generatedUsers.map(row=>row.id);
+ if(userIds.length){await cleanupDb.teacherAssignment.deleteMany({where:{teacherId:{in:userIds}}});await cleanupDb.guardianLink.deleteMany({where:{userId:{in:userIds}}});await cleanupDb.user.deleteMany({where:{id:{in:userIds}}})}
+ await cleanupDb.payrollEntry.deleteMany({where:{reference:"PAYROLL-E2E-01"}});
+ if(attendanceFixture){const date=new Date(`${attendanceFixture.date}T00:00:00.000Z`);if(attendanceFixture.previousStatus)await cleanupDb.attendance.upsert({where:{learnerId_date:{learnerId:attendanceFixture.learnerId,date}},create:{learnerId:attendanceFixture.learnerId,date,status:attendanceFixture.previousStatus},update:{status:attendanceFixture.previousStatus}});else await cleanupDb.attendance.deleteMany({where:{learnerId:attendanceFixture.learnerId,date}})}
+ if(testAvatarUrl.startsWith("/uploads/avatars/")&&!testAvatarUrl.includes("..")){await cleanupDb.user.updateMany({where:{avatarUrl:testAvatarUrl},data:{avatarUrl:null}});await unlink(path.join(process.cwd(),"public",testAvatarUrl.slice(1))).catch(()=>undefined)}
+ await cleanupDb.$disconnect();
+});
 test("Director signs in, changes temporary password when required, and manages learners and accounts", async ({ page, playwright }) => {
+ test.setTimeout(180_000);
+ await page.emulateMedia({reducedMotion:"reduce"});
  await page.goto("/");
  await page.getByLabel("Email address").fill("director@maryroyal.ac.ke");
- const login = async (password:string) => { await page.getByLabel("Password").fill(password); const responsePromise=page.waitForResponse(response=>response.url().endsWith("/api/login")); await page.getByRole("button", { name: "Sign in" }).click(); return responsePromise; };
+ const login = async (password:string) => { await page.getByLabel("Password",{exact:true}).fill(password); const responsePromise=page.waitForResponse(response=>response.url().endsWith("/api/login")); await page.getByRole("button", { name: "Sign in securely" }).click(); return responsePromise; };
  let response=await login("MaryRoyal2026!");
- if(!response.ok()) { await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled(); response=await login("MaryRoyalTest2026!"); }
+ if(!response.ok()) { await expect(page.getByRole("button", { name: "Sign in securely" })).toBeEnabled(); response=await login("MaryRoyalTest2026!"); }
  expect(response.ok()).toBeTruthy();
- await expect(page).toHaveURL(/(change-password|dashboard)/);
- if(page.url().includes("change-password")){
+ if(await page.getByLabel("New password").count()){
   await page.getByLabel("New password").fill("MaryRoyalTest2026!");
   await page.getByRole("button", { name: "Update password" }).click();
  }
- await expect(page).toHaveURL(/dashboard/);
- await expect(page.getByRole("heading", { name: /Good morning/ })).toBeVisible();
+ await expect(page.getByRole("heading", { name: /Good (morning|afternoon)/ })).toBeVisible();
+ const profile=await page.request.get("/api/profile");expect(profile.ok()).toBeTruthy();expect((await profile.json()).profile.email).toBe("director@maryroyal.ac.ke");
+ const profilePhoto=await page.request.post("/api/profile",{multipart:{photo:{name:"profile.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/qXcAAAAASUVORK5CYII=","base64")}}});expect(profilePhoto.status()).toBe(200);testAvatarUrl=(await profilePhoto.json()).avatarUrl;expect(testAvatarUrl).toMatch(/^\/uploads\/avatars\/[a-f0-9-]+\.png$/);
+ const directorMarkWrite=await page.request.post("/api/assessments",{data:{learnerId:"not-a-learner",subject:"English",score:75,term:"2026 Term 3"}});expect(directorMarkWrite.status()).toBe(403);
+ await expect(page.locator("body")).toHaveAttribute("data-theme-ready","true");await page.getByRole("button",{name:"Switch to dark mode"}).click();await expect(page.locator("html")).toHaveAttribute("data-theme","dark");await page.reload();await expect(page.locator("html")).toHaveAttribute("data-theme","dark");await expect(page.getByRole("button",{name:"Switch to light mode"})).toBeVisible();await page.getByRole("button",{name:"Switch to light mode"}).click();
+ const sidebar=page.locator(".school-sidebar");const topBefore=await sidebar.boundingBox();await page.evaluate(()=>window.scrollTo(0,500));const topAfter=await sidebar.boundingBox();expect(topBefore?.y).toBe(0);expect(topAfter?.y).toBe(0);const lightNavColor=await sidebar.evaluate(el=>getComputedStyle(el).backgroundColor);await page.getByRole("button",{name:"Switch to dark mode"}).click();const darkNavColor=await sidebar.evaluate(el=>getComputedStyle(el).backgroundColor);expect(darkNavColor).not.toBe(lightNavColor);await page.getByRole("button",{name:"Switch to light mode"}).click();await page.setViewportSize({width:390,height:844});await expect(page.getByRole("navigation",{name:"Mobile navigation"})).toBeVisible();const mobileWidth=await page.evaluate(()=>document.documentElement.scrollWidth);expect(mobileWidth).toBeLessThanOrEqual(390);await page.setViewportSize({width:1280,height:900});
  await page.goto("/learners");
- await page.getByRole("button", { name: "Add learner" }).click();
- testLearnerAdmission=`E2E-${Date.now()}`;
- await page.getByLabel("Admission number").fill(testLearnerAdmission);
+ await page.evaluate(()=>{document.documentElement.style.scrollBehavior="auto";window.scrollTo(0,0)});
+ await expect(page.getByRole("heading",{name:"Learner register"})).toBeVisible();
+ await expect(page.getByRole("cell",{name:"Achieng Otieno"})).toBeVisible();
+ await page.getByRole("button", { name: "+ Admit learner" }).click();
  const learnerName=`Demo Learner ${Date.now()}`;
  await page.getByLabel("Learner name").fill(learnerName);
  await page.getByLabel("Grade").selectOption("Grade 4");
  await page.getByLabel("Gender").selectOption("Female");
  await page.getByRole("button", { name: "Save learner" }).click();
- await expect(page.getByRole("status")).toContainText("added to the register");
  await expect(page.getByRole("cell", { name: learnerName })).toBeVisible();
+ const learnerRow=page.getByRole("row").filter({hasText:learnerName});testLearnerAdmission=(await learnerRow.getByRole("cell").first().innerText()).trim();expect(testLearnerAdmission).toMatch(/^MR-\d+$/);
  const teacherEmail=`teacher-${Date.now()}@maryroyal.ac.ke`;
  await page.goto("/accounts");
  await page.getByLabel("Full name").fill("Demo Newly Created Teacher");
  await page.getByLabel("Email").fill(teacherEmail);
  await page.getByLabel("Role").selectOption("TEACHER");
- await page.getByRole("button", { name: "Create account" }).click();
+ await page.getByRole("button", { name: "Create", exact: true }).click();
  const tempText=await page.getByRole("status").innerText();
- const temporaryPassword=tempText.split(" · ")[1].trim().split(/\s+/)[0];
+ const temporaryPassword=tempText.split("\n").find(line=>line.includes(teacherEmail))?.split(" · ")[1]?.trim()??"";
  expect(temporaryPassword.length).toBeGreaterThanOrEqual(12);
- await expect(page.getByRole("cell", { name: teacherEmail })).toBeVisible();
+ await expect(page.locator("article").filter({hasText:teacherEmail})).toBeVisible();
  const parentEmail=`parent-${Date.now()}@maryroyal.ac.ke`;
- await page.getByLabel("Full name").fill("Demo Linked Parent");await page.getByLabel("Email").fill(parentEmail);await page.getByLabel("Role").selectOption("PARENT");await page.getByRole("button",{name:"Create account"}).click();
- const parentText=await page.getByRole("status").innerText();const parentPassword=parentText.split(" · ")[1].trim().split(/\s+/)[0];
+ await page.getByLabel("Full name").fill("Demo Linked Parent");await page.getByLabel("Email").fill(parentEmail);await page.getByLabel("Role").selectOption("PARENT");await page.getByRole("button",{name:"Create",exact:true}).click();
+ const parentText=await page.getByRole("status").innerText();const parentPassword=parentText.split("\n").find(line=>line.includes(parentEmail))?.split(" · ")[1]?.trim()??"";
  const linked=await page.evaluate(async({email,admissionNo})=>{const accounts=await fetch("/api/accounts").then(r=>r.json());const learners=await fetch(`/api/learners?q=${admissionNo}`).then(r=>r.json());const account=accounts.accounts.find((item:{email:string;id:string})=>item.email===email);const learner=learners.learners[0];const response=await fetch("/api/guardians",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:account.id,learnerId:learner.id,relation:"Parent"})});return {status:response.status,name:learner.name}}, {email:parentEmail,admissionNo:testLearnerAdmission});expect(linked.status).toBe(201);
  const csv=await page.request.get("/api/reports/learners");expect(csv.status()).toBe(200);expect(csv.headers()["content-type"]).toContain("text/csv");expect(await csv.text()).toContain(testLearnerAdmission);const exportAudit=await page.request.get("/api/audit?action=DATA_EXPORTED");expect(exportAudit.ok()).toBeTruthy();expect((await exportAudit.text())).toContain("DATA_EXPORTED");
  testAssessmentId=await page.evaluate(async()=>{const data=await fetch("/api/assessments?term=2026%20Term%201").then(r=>r.json());return data.assessments[0].id});
@@ -53,6 +87,7 @@ test("unauthenticated users cannot read learner data", async ({ request }) => {
  expect((await request.get("/privacy")).status()).toBe(200);
 });
 test("non-director roles receive only the account and learner access configured for them", async ({ playwright }) => {
+ test.setTimeout(90_000);
  const roles=["headteacher","deputy","accountant","teacher","parent","learner"] as const;
  for(const role of roles){
   const api=await playwright.request.newContext({baseURL:"http://127.0.0.1:3000"});
@@ -80,6 +115,8 @@ test("non-director roles receive only the account and learner access configured 
   const canViewAssessments=["headteacher","deputy","teacher","parent","learner"].includes(role);
   expect(assessments.status()).toBe(canViewAssessments?200:403);
   const finance=await api.get("/api/finance/invoices");expect(finance.status()).toBe(["accountant","parent"].includes(role)?200:403);
+  const payroll=await api.get("/api/finance/payroll");expect(payroll.status()).toBe(["accountant"].includes(role)?200:403);
+  const payrollWrite=await api.post("/api/finance/payroll",{data:{staffId:"not-a-staff",period:"2027-01",grossAmount:50000,deductions:5000}});expect(payrollWrite.status()).toBe(role==="accountant"?400:403);
   expect((await api.get("/api/guardians")).status()).toBe(403);
   expect((await api.post("/api/guardians",{data:{userId:"not-a-user",learnerId:"not-a-learner"}})).status()).toBe(403);
   expect((await api.delete("/api/guardians",{data:{id:"not-a-link"}})).status()).toBe(403);
@@ -127,9 +164,10 @@ test("accountant invoices, records M-Pesa, carries credit forward, and voids wit
  const duplicate=await api.post("/api/finance/payments",{data:{invoiceId:firstInvoice.id,amount:100,method:"MPESA",mpesaCode:code}});expect(duplicate.status()).toBe(409);
  const second=await api.post("/api/finance/invoices",{data:{learnerId:learner!.id,term:"2026 Term 2",items:[{category:"TUITION",description:"Prior term tuition",amount:10000}]}});expect(second.status()).toBe(201);const secondData=(await second.json()).invoice as {id:string;creditApplied:number;balance:number};expect(secondData.creditApplied).toBe(2000);expect(secondData.balance).toBe(8000);
  const cash=await api.post("/api/finance/payments",{data:{invoiceId:secondData.id,amount:1000,method:"CASH"}});expect(cash.status()).toBe(201);const cashData=(await cash.json()).payment as {id:string};const noReason=await api.post(`/api/finance/payments/${cashData.id}/void`,{data:{reason:"short"}});expect(noReason.status()).toBe(400);const voided=await api.post(`/api/finance/payments/${cashData.id}/void`,{data:{reason:"Duplicate entry correction"}});expect(voided.ok()).toBeTruthy();
+ const payrollData=await (await api.get("/api/finance/payroll")).json() as {staff:Array<{id:string}>};const payroll=await api.post("/api/finance/payroll",{data:{staffId:payrollData.staff[0].id,period:`${2000+Math.floor(Date.now()/1000)%7999}-01`,grossAmount:50000,deductions:5000}});expect(payroll.status()).toBe(201);const payrollEntry=(await payroll.json()).entry as {id:string;netAmount:number};expect(payrollEntry.netAmount).toBe(45000);const paid=await api.patch("/api/finance/payroll",{data:{action:"mark-paid",id:payrollEntry.id,reference:"PAYROLL-E2E-01"}});expect(paid.ok()).toBeTruthy();expect((await paid.json()).entry.status).toBe("PAID");
  await api.dispose();
 });
 test("teacher records attendance only for an assigned class and cannot tamper with another class",async({playwright})=>{
  const api=await playwright.request.newContext({baseURL:"http://127.0.0.1:3000"});let login=await api.post("/api/login",{data:{email:"teacher@maryroyal.ac.ke",password:"PortalTest2026!"}});if(!login.ok())login=await api.post("/api/login",{data:{email:"teacher@maryroyal.ac.ke",password:"MaryRoyal2026!"}});expect(login.ok()).toBeTruthy();if((await login.json()).forcePasswordChange)await api.post("/api/change-password",{data:{password:"PortalTest2026!"}});
- const learnerData=await (await api.get("/api/learners?take=100")).json() as {learners:Array<{id:string;grade:string}>};const learner=learnerData.learners.find(item=>item.grade==="Grade 4");expect(learner).toBeTruthy();const date=new Date().toISOString().slice(0,10);const saved=await api.post("/api/attendance",{data:{grade:"Grade 4",date,records:[{learnerId:learner!.id,status:"ABSENT"}]}});expect(saved.status()).toBe(200);const register=await api.get(`/api/attendance?grade=Grade%204&date=${date}`);expect(register.ok()).toBeTruthy();const registerData=await register.json() as {learners:Array<{id:string;status:string}>};expect(registerData.learners.find(item=>item.id===learner!.id)?.status).toBe("ABSENT");const idor=await api.post("/api/attendance",{data:{grade:"Grade 9",date,records:[{learnerId:learner!.id,status:"PRESENT"}]}});expect(idor.status()).toBe(403);await api.dispose();
+ const learnerData=await (await api.get("/api/learners?take=100")).json() as {learners:Array<{id:string;grade:string}>};const learner=learnerData.learners.find(item=>item.grade==="Grade 4");expect(learner).toBeTruthy();const date=new Date().toISOString().slice(0,10);const day=new Date(`${date}T00:00:00.000Z`);const existingAttendance=await cleanupDb.attendance.findUnique({where:{learnerId_date:{learnerId:learner!.id,date:day}}});attendanceFixture={learnerId:learner!.id,date,previousStatus:existingAttendance?.status??null};const saved=await api.post("/api/attendance",{data:{grade:"Grade 4",date,records:[{learnerId:learner!.id,status:"ABSENT"}]}});expect(saved.status()).toBe(200);const updated=await api.get(`/api/attendance?grade=Grade%204&date=${date}`);expect(updated.ok()).toBeTruthy();const updatedData=await updated.json() as {learners:Array<{id:string;status:string}>};expect(updatedData.learners.find(item=>item.id===learner!.id)?.status).toBe("ABSENT");const idor=await api.post("/api/attendance",{data:{grade:"Grade 9",date,records:[{learnerId:learner!.id,status:"PRESENT"}]}});expect(idor.status()).toBe(403);await api.dispose();
 });

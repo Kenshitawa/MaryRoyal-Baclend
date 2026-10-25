@@ -1,2 +1,2 @@
 import { NextResponse } from "next/server";
-export async function POST() { const response = NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")); response.cookies.set("mary_session", "", { httpOnly: true, path: "/", maxAge: 0, sameSite: "lax" }); return response; }
+export async function POST() { const response = NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")); response.cookies.set("mary_session", "", { httpOnly: true, path: "/", maxAge: 0, sameSite: "lax" }); response.cookies.set("mary_activity", "", { httpOnly: true, path: "/", maxAge: 0, sameSite: "lax" }); return response; }
