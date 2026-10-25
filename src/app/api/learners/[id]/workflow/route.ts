@@ -22,10 +22,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (learner.admissionStatus !== "PENDING") return NextResponse.json({ error: "This admission has already been reviewed." }, { status: 409 });
   const updated = await db.$transaction(async tx => {
     const row = await tx.learner.update({ where: { id }, data: { admissionStatus: "APPROVED", admissionApprovedById: actor.id, admissionApprovedAt: new Date() } });
-    const learnerAccount = await tx.guardianLink.findFirst({ where: { learnerId: id, relation: "Learner" }, select: { userId: true } });
+    await tx.admissionDraft.updateMany({ where: { learnerId: id, status: "SUBMITTED" }, data: { status: "ENROLLED", enrolledAt: new Date() } });
+    const learnerAccount = await tx.guardianLink.findFirst({ where: { learnerId: id, relation: "Learner" }, select: { userId: true, user: { select: { suspensionReason: true } } } });
     if (learnerAccount) {
-      await tx.user.update({ where: { id: learnerAccount.userId }, data: { suspended: false } });
-      await tx.auditEvent.create({ data: { actorId: actor.id, action: "LEARNER_ACCOUNT_ACTIVATED", entity: "User", entityId: learnerAccount.userId } });
+      if (learnerAccount.user.suspensionReason === "ADMISSION_PENDING") {
+        await tx.user.update({ where: { id: learnerAccount.userId }, data: { suspended: false, suspensionReason: null } });
+        await tx.auditEvent.create({ data: { actorId: actor.id, action: "LEARNER_ACCOUNT_ACTIVATED", entity: "User", entityId: learnerAccount.userId } });
+      }
+    }
+    const parentLinks = await tx.guardianLink.findMany({ where: { learnerId: id, relation: { not: "Learner" } }, select: { userId: true } });
+    const pendingParents = await tx.user.findMany({ where: { id: { in: parentLinks.map(link => link.userId) }, suspensionReason: "ADMISSION_PENDING" }, select: { id: true } });
+    if (pendingParents.length) {
+      await tx.user.updateMany({ where: { id: { in: pendingParents.map(parent => parent.id) }, suspensionReason: "ADMISSION_PENDING" }, data: { suspended: false, suspensionReason: null } });
+      await Promise.all(pendingParents.map(parent => tx.auditEvent.create({ data: { actorId: actor.id, action: "PARENT_ACCOUNT_ACTIVATED", entity: "User", entityId: parent.id } })));
     }
     await tx.auditEvent.create({ data: { actorId: actor.id, action: "ADMISSION_APPROVED", entity: "Learner", entityId: row.id } });
     return row;

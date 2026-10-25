@@ -49,13 +49,13 @@ Every seeded account uses `MaryRoyal2026!` and is prompted to change its passwor
 - **Director:** manage all accounts; oversee learner, fee, attendance, payroll, assessment, and audit data; approve or release controlled school workflows.
 - **Head Teacher:** lead academic work, review/approve admissions and results, approve fee confirmations, and view school finance summaries; cannot create accounts or enter marks.
 - **Deputy Head Teacher:** support school-wide attendance and academic operations. The full exam, timetable, library, discipline, and duty workflows are tracked in the roadmap.
-- **Secretary:** admit and update learner records, explicitly create learner logins where needed, search class lists, and view fee structures and learner fee totals/balances. Secretary cannot record payments, access receipts, or view the complaint inbox.
+- **Secretary:** complete and resume the seven-step admission packet, upload private documents, download/print the admission form, explicitly create learner access or create/link a parent account, search class lists, and view fee structures and learner fee totals/balances. Secretary cannot record payments, access receipts, or view the complaint inbox.
 - **Accountant:** create invoices, record and correct payments, issue receipts after approval, and manage finance workflows. Finance-only access excludes grades, discipline, medical notes, and private messages.
 - **Teacher:** work with assigned learners/subjects, submit marks, take attendance only when separately assigned as class teacher, create assignments and review submissions, and submit a short teaching log for school-leader confirmation.
 - **Parent:** view only linked children, results, attendance, and fee statements; submit and track complaints directed to the Head Teacher, Director, or both.
 - **Learner:** view their own learning area and records, submit assignments, access teacher-shared grade-specific resources, and play the practice games.
 
-Learner and parent logins are not created automatically at admission. The Secretary or Director can explicitly create a learner login; a parent account can be linked or created through account administration. Temporary passwords are shown once and must be changed at first sign-in.
+Learner and parent logins are not created automatically at admission. The Secretary or Director can explicitly create learner access and create or link parent access from the completed admission. Existing parents are matched by phone/ID where available. New temporary passwords are shown once and must be changed at first sign-in; pending admissions keep new accounts suspended until Head Teacher approval.
 
 ## Commands
 

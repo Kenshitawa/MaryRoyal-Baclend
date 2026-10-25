@@ -2,16 +2,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { assertCan, canInScope } from "@/lib/permissions";
+import { assertCan, assertCanInScope, canInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
 import { cookies } from "next/headers";
-const learnerInput = z.object({ name: z.string().trim().min(2).max(120), grade: z.enum(["PP1","PP2","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9"]), gender: z.enum(["Female","Male"]) });
 async function currentRole() { const token = (await cookies()).get("mary_session")?.value; const session = token ? await readSession(token) : null; if (!session) return null; const user = await db.user.findUnique({ where: { id: session.id }, select: { id: true, role: true, suspended: true, forcePasswordChange: true } }); return user && !user.suspended && !user.forcePasswordChange ? user : null; }
 export async function GET(request: Request) {
  const user = await currentRole(); if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
  try { assertCan(user.role, "learners", "view"); } catch { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "Learner" } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
  const { searchParams } = new URL(request.url); const parsed = z.object({ q: z.string().max(80).optional(), take: z.coerce.number().int().min(1).max(100).default(25), cursor: z.string().optional() }).safeParse(Object.fromEntries(searchParams)); if (!parsed.success) return NextResponse.json({ error: "Invalid filters." }, { status: 400 });
  const q = parsed.data.q?.trim(); let gradeScope: string[] | undefined; let linkedIds: string[] | undefined;
+ if (canInScope(user.role, "learners", "view", "learner-identity")) {
+  const learners = await db.learner.findMany({ where: { archivedAt: null, admissionStatus: "APPROVED", ...(q ? { OR: [{ name: { contains: q } }, { admissionNo: { contains: q } }, { grade: { contains: q } }] } : {}) }, select: { id: true, admissionNo: true, name: true, grade: true }, orderBy: { admissionNo: "asc" }, take: parsed.data.take + 1, ...(parsed.data.cursor ? { cursor: { id: parsed.data.cursor }, skip: 1 } : {}) });
+  const hasMore = learners.length > parsed.data.take; const rows = learners.slice(0, parsed.data.take); return NextResponse.json({ learners: rows, nextCursor: hasMore ? rows.at(-1)?.id : null });
+ }
  if (!canInScope(user.role, "learners", "view", "school")) {
   if (canInScope(user.role, "learners", "view", "assigned")) { const assignments=await db.teacherAssignment.findMany({where:{teacherId:user.id},select:{grade:true}}); gradeScope=[...new Set(assignments.map(a=>a.grade))]; }
   else if (canInScope(user.role, "learners", "view", "learner-identity")) { /* Reserved for a future explicitly scoped finance identity view. */ }
@@ -22,12 +25,9 @@ export async function GET(request: Request) {
  const learners = await db.learner.findMany({ where, select: { id: true, admissionNo: true, name: true, grade: true, gender:true, admissionStatus:true, guardians: { where: { relation: "Learner" }, select: { id: true }, take: 1 } }, orderBy: { admissionNo: "asc" }, take: parsed.data.take + 1, ...(parsed.data.cursor ? { cursor: { id: parsed.data.cursor }, skip: 1 } : {}) });
  const hasMore = learners.length > parsed.data.take; const rows = learners.slice(0, parsed.data.take).map(({guardians,...learner})=>({...learner,hasLearnerLogin:guardians.length>0})); return NextResponse.json({ learners: rows, nextCursor: hasMore ? rows.at(-1)?.id : null });
 }
-export async function POST(request: Request) {
+export async function POST() {
  const user = await currentRole(); if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
- try { assertCan(user.role, "learners", "create"); } catch { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "Learner" } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
- let input: unknown; try { input = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
- const parsed = learnerInput.safeParse(input); if (!parsed.success) return NextResponse.json({ error: "Check the admission number, name, grade, and gender." }, { status: 400 });
- try { const learner = await db.$transaction(async (tx) => { const counter = await tx.admissionCounter.upsert({ where: { id: "global" }, create: { id: "global", lastNumber: 1 }, update: { lastNumber: { increment: 1 } } }); const admissionNo = `MR-${String(counter.lastNumber).padStart(2, "0")}`; const admissionStatus = user.role === "SECRETARY" ? "PENDING" : "APPROVED"; const row = await tx.learner.create({ data: { ...parsed.data, admissionNo, admissionStatus } }); await tx.auditEvent.create({ data: { actorId: user.id, action: user.role === "SECRETARY" ? "ADMISSION_SUBMITTED" : "LEARNER_CREATED", entity: "Learner", entityId: row.id } }); return row; }); return NextResponse.json({ learner, hasLearnerLogin: false }, { status: 201 }); }
- catch { return NextResponse.json({ error: "A learner could not be admitted. Reload and try again." }, { status: 409 }); }
+ try { assertCanInScope(user.role, "admissions", "create", "school"); } catch { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "Learner" } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
+ return NextResponse.json({ error: "Learners are created only from a complete admission record. Start or resume an admission at /admissions." }, { status: 410 });
 }
 

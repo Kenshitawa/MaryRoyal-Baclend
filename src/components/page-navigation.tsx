@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 const dirtyForms = new Set<HTMLFormElement>();
 const blockedPaths = new Set(["/", "/login", "/change-password"]);
+const replaceablePaths = new Set(["/admissions/new"]);
 const humanize = (value: string) => value.replaceAll("-", " ").replace(/\b\w/g, letter => letter.toUpperCase());
 
 function readStack(key: string): string[] {
@@ -32,7 +33,9 @@ export default function PageNavigation({ active, homeHref, userId }: { active: s
     }
     const stack = readStack(storageKey);
     let returnedToEarlierPage = false;
-    if (stack.at(-2) === pathname) {
+    if (replaceablePaths.has(stack.at(-1) ?? "")) {
+      stack[stack.length - 1] = pathname;
+    } else if (stack.at(-2) === pathname) {
       stack.pop();
       returnedToEarlierPage = true;
     } else if (stack.at(-1) !== pathname) stack.push(pathname);

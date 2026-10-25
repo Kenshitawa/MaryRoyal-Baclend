@@ -20,10 +20,13 @@ model User {
   name                String
   avatarUrl           String?
   email               String             @unique
+  phone               String?            @unique
+  governmentId        String?            @unique
   passwordHash        String
   role                Role
   forcePasswordChange Boolean            @default(true)
   suspended           Boolean            @default(false)
+  suspensionReason    String?
   failedLogins        Int                @default(0)
   createdAt           DateTime           @default(now())
   auditEvents         AuditEvent[]
@@ -45,6 +48,8 @@ model User {
   complaintsOpened  Complaint[] @relation("ComplaintOpener")
   complaintsAssigned Complaint[] @relation("ComplaintAssignee")
   complaintRepliesAuthored ComplaintReply[]
+  admissionDrafts AdmissionDraft[] @relation("AdmissionCreator")
+  admissionDocuments AdmissionDocument[] @relation("AdmissionUploader")
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -63,6 +68,122 @@ model Learner {
   guardians   GuardianLink[]
   assignmentSubmissions AssignmentSubmission[]
   learningGameAttempts LearningGameAttempt[]
+  profile LearnerProfile?
+  admissionDraft AdmissionDraft?
+}
+model LearnerProfile {
+  id                    String   @id @default(cuid())
+  learnerId             String   @unique
+  learner               Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  dateOfBirth           DateTime?
+  nationality           String   @default("Kenyan")
+  upiNumber             String?
+  stream                String?
+  admissionDate         DateTime?
+  previousSchool        String?
+  previousClass         String?
+  reasonForLeaving      String?
+  religion              String?
+  languagesSpoken       String   @default("")
+  county                String   @default("")
+  subCounty             String   @default("")
+  ward                  String   @default("")
+  village               String   @default("")
+  physicalAddress       String   @default("")
+  landmark              String?
+  distanceToSchoolKm    Float?
+  transportMeans        String?
+  latitude              Float?
+  longitude             Float?
+  knownConditions       String?
+  allergies             String?
+  currentMedication     String?
+  specialNeeds          String?
+  bloodGroup            String?
+  doctorOrHospital      String?
+  immunizationStatus    String?
+  healthInsurance       String?
+  feePayer               String?
+  consentAt              DateTime?
+  guardians              LearnerGuardian[]
+  emergencyContacts      LearnerEmergencyContact[]
+  pickupPersons          LearnerPickupPerson[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  @@index([county, subCounty])
+}
+model LearnerGuardian {
+  id             String   @id @default(cuid())
+  profileId      String
+  profile        LearnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  fullName       String
+  relationship  String
+  idNumber       String?
+  phone          String
+  alternatePhone String?
+  whatsapp       Boolean  @default(false)
+  email          String?
+  occupation     String?
+  employer       String?
+  homeAddress    String?
+  workAddress    String?
+  paysFees       Boolean  @default(false)
+  primaryContact Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  @@index([profileId, primaryContact])
+  @@index([phone])
+}
+model LearnerEmergencyContact {
+  id             String   @id @default(cuid())
+  profileId      String
+  profile        LearnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  fullName       String
+  relationship  String
+  phone          String
+  createdAt      DateTime @default(now())
+  @@index([profileId])
+}
+model LearnerPickupPerson {
+  id             String   @id @default(cuid())
+  profileId      String
+  profile        LearnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  fullName       String
+  relationship  String
+  phone          String
+  createdAt      DateTime @default(now())
+  @@index([profileId])
+}
+model AdmissionDraft {
+  id           String   @id @default(cuid())
+  admissionNo  String   @unique
+  createdById  String
+  createdBy    User     @relation("AdmissionCreator", fields: [createdById], references: [id])
+  learnerId    String?  @unique
+  learner      Learner? @relation(fields: [learnerId], references: [id])
+  payload      String   @default("{}")
+  currentStep  Int      @default(1)
+  status       String   @default("DRAFT")
+  submittedAt  DateTime?
+  enrolledAt   DateTime?
+  documents    AdmissionDocument[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([createdById, status, updatedAt])
+  @@index([status, updatedAt])
+}
+model AdmissionDocument {
+  id          String   @id @default(cuid())
+  draftId     String
+  draft       AdmissionDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  category    String
+  originalName String
+  storageKey  String   @unique
+  contentType String
+  sizeBytes   Int
+  uploadedById String
+  uploadedBy  User     @relation("AdmissionUploader", fields: [uploadedById], references: [id])
+  createdAt   DateTime @default(now())
+  @@index([draftId, category])
 }
 model AdmissionCounter {
   id         String @id

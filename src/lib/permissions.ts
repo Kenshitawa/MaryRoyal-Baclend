@@ -1,11 +1,13 @@
 import { Role } from "@prisma/client";
-export type Action = "view" | "create" | "update" | "delete" | "approve" | "review" | "release";
-export type Resource = "dashboard" | "accounts" | "learners" | "learnerAccounts" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "complaints";
+export type Action = "view" | "create" | "update" | "delete" | "approve" | "review" | "release" | "submit";
+export type Resource = "dashboard" | "accounts" | "staff" | "learners" | "admissions" | "learnerAccounts" | "attendance" | "assessments" | "finance" | "invoices" | "payments" | "payroll" | "audit" | "operations" | "guardians" | "exports" | "teachingLogs" | "assignments" | "learning" | "complaints";
 export type DataScope = "school" | "assigned" | "linked" | "self" | "learner-identity" | "academic" | "operations" | "finance";
 const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  dashboard: { view: Object.values(Role) },
  accounts: { view: [Role.DIRECTOR], create: [Role.DIRECTOR], update: [Role.DIRECTOR], delete: [Role.DIRECTOR] },
- learners: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.TEACHER, Role.PARENT, Role.LEARNER], create: [Role.DIRECTOR, Role.SECRETARY], update: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY], approve: [Role.HEAD_TEACHER], delete: [Role.DIRECTOR] },
+ staff: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.ACCOUNTANT, Role.TEACHER] },
+ learners: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.TEACHER, Role.PARENT, Role.LEARNER, Role.ACCOUNTANT], update: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY], approve: [Role.HEAD_TEACHER], delete: [Role.DIRECTOR] },
+ admissions: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY], create: [Role.DIRECTOR, Role.SECRETARY], update: [Role.DIRECTOR, Role.SECRETARY], submit: [Role.DIRECTOR, Role.SECRETARY], approve: [Role.HEAD_TEACHER] },
  learnerAccounts: { create: [Role.DIRECTOR, Role.SECRETARY] },
  attendance: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER, Role.PARENT, Role.LEARNER], create: [Role.DIRECTOR, Role.TEACHER], update: [Role.DIRECTOR, Role.TEACHER] },
  assessments: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER, Role.PARENT, Role.LEARNER], create: [Role.TEACHER], update: [Role.TEACHER], approve: [Role.HEAD_TEACHER, Role.DIRECTOR], review:[Role.HEAD_TEACHER],release:[Role.DIRECTOR] },
@@ -25,8 +27,10 @@ const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
 const scopes: Record<Resource, Partial<Record<DataScope, Role[]>>> = {
  dashboard: { school: [Role.DIRECTOR], academic: [Role.HEAD_TEACHER], operations: [Role.DEPUTY], finance: [Role.HEAD_TEACHER,Role.SECRETARY,Role.ACCOUNTANT], assigned: [Role.TEACHER], linked: [Role.PARENT], self: [Role.LEARNER] },
  accounts: { school: [Role.DIRECTOR] },
+ staff: { school: [Role.DIRECTOR, Role.HEAD_TEACHER], self: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.ACCOUNTANT, Role.TEACHER] },
  learnerAccounts: { school: [Role.DIRECTOR,Role.SECRETARY] },
- learners: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY], assigned: [Role.TEACHER], linked: [Role.PARENT], self: [Role.LEARNER] },
+ learners: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY], assigned: [Role.TEACHER], linked: [Role.PARENT], self: [Role.LEARNER], "learner-identity": [Role.ACCOUNTANT] },
+ admissions: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY] },
  attendance: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY], assigned: [Role.TEACHER], linked: [Role.PARENT], self: [Role.LEARNER] },
  assessments: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY], assigned: [Role.TEACHER], linked: [Role.PARENT], self: [Role.LEARNER] },
  finance: { school: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY, Role.ACCOUNTANT], linked: [Role.PARENT] },
