@@ -123,3 +123,28 @@
 - Tested: lint, strict TypeScript, 16 Vitest tests, Prisma validation, `git diff --check`, local HTTP GET `/` (200), focused Playwright profile/admission flow (1/1), and focused role access with learner/account and staff-attendance checks (1/1 before the final discipline assertions were added).
 - Known issues: photo crop, employment-field editing after account creation, profile message-parent action, Director-configurable fee/health visibility settings, full U4/U6/U7/U9 requirements, and the page-by-page U10 visual audit remain. Full Playwright rerun and production build are part of U11.
 - Next: finish U10 interface audit/QA, then U11 full acceptance and update this record with final suite results. No deployment was performed.
+
+## Learner Profile comprehensive upgrade, Theme Light/Dark mode fixes, and Live Reports — 2026-10-26
+- Built: upgraded Learner Profile (`/learners/[id]`) with comprehensive, role-aware Bento & Glass tabs:
+  1. Biography & School Identity (full student details, NEMIS/UPI, age, admission date, languages, religion).
+  2. Fee Balance & Financial Ledger (net balance, total billed, total paid, term-by-term invoice line items, confirmed receipts with printable vouchers).
+  3. CBC Exam Results & Progress (overall average, proficiency descriptors EE/ME/AE/BE, subject trend visualization, detailed marksheets with strands and teacher evaluative feedback).
+  4. Class Register & Attendance (total sessions, attendance rate %, days present, absent, late, and daily roll-call register).
+  5. Talents, Clubs & CBC Co-Curricular Pathways (identified gifts & aptitudes, Arts/STEM/Social Sciences pathways, school clubs, sports & athletics, and student leadership).
+  6. Parents & Guardians (primary contact badge, direct phone and email links, emergency contacts, authorized pick-up persons).
+  7. Residence & Transport (Kisumu Central / Obunga physical address, landmarks, distance to school, and means of transport).
+  8. Restricted Health Record (audit-logged medical conditions, blood group, allergies, medications, and insurance).
+  9. Admission Documents (verified category uploads and download links).
+  10. Discipline & Welfare (conduct records, actions taken, and welfare status).
+  11. Profile Edit History & Audits (immutable timestamped security audit log).
+- Built: upgraded Learner Directory (`/learners`) with direct "View Profile →" action buttons for every pupil, alongside clickable name and admission number links.
+- Fixed: comprehensive light and dark mode styling across all pages:
+  - Enforced dark font (`#0f172a`) in light mode for all search inputs, text inputs, selects, and textareas, eliminating white/light font issues.
+  - Initialized `data-theme` explicitly (`light` or `dark`) in `theme-provider.tsx`, `layout.tsx` beforeInteractive script, and `theme-toggle.tsx`.
+  - Mapped dark mode surface opacities (`bg-white/*` and `bg-slate-50/*`) to deep navy/slate surfaces (`#111d32` / `#17253c`), ensuring high-contrast typography and no blinding white card backgrounds in dark mode.
+- Fixed: eliminated all "Coming soon" placeholders across the application:
+  - Implemented `/api/reports/assessments/route.ts` for live CSV export of released CBC assessments.
+  - Implemented `/api/reports/finance/route.ts` for live CSV export of fee collections and balances.
+  - Updated `/reports` with live download buttons for both reports.
+- Tested: `npm run typecheck` passed (0 errors); `npm run lint` passed (0 errors); `npm test` passed (20/20 unit and permission tests). Local git tree clean.
+
