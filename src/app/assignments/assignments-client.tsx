@@ -8,14 +8,10 @@ import {
   BookOpen,
   BookOpenCheck,
   CheckCircle2,
-  ClipboardCheck,
-  Clock,
-  Layers,
   Plus,
   Search,
   Send,
   Sparkles,
-  Tag,
   Users,
 } from "lucide-react";
 

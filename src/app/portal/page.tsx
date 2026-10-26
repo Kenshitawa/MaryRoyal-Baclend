@@ -7,17 +7,12 @@ import { readSession } from "@/lib/session";
 import PortalFrame from "@/components/portal-frame";
 import { LearnerLink } from "@/components/learner-link";
 import {
-  BookOpen,
   Calendar,
   CheckCircle2,
-  Clock,
-  CreditCard,
-  FileText,
   GraduationCap,
   HeartHandshake,
   Receipt,
   Trophy,
-  Users,
   Wallet,
 } from "lucide-react";
 

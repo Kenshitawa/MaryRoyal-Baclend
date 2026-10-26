@@ -11,11 +11,8 @@ import {
   KeyRound,
   Lock,
   Mail,
-  Shield,
   ShieldCheck,
-  Sparkles,
   Upload,
-  User,
 } from "lucide-react";
 
 export default function ProfileSettings({

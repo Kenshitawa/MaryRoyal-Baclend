@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { BookOpen, BookOpenCheck, CalendarCheck, FileText, GraduationCap, LogOut, ScrollText, ShieldCheck, Users, Wallet, Eye, ClipboardList, MessageCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
-import ThemeToggle from "@/components/theme-toggle";
 import { ThemeStyleControls } from "@/components/design-system/theme-provider";
 import PageNavigation from "@/components/page-navigation";
 

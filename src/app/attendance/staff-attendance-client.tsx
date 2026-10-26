@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, CheckCircle2, Clock, Save, Shield, UserCheck, Users } from "lucide-react";
+import { Check, CheckCircle2, Clock, Save, Shield } from "lucide-react";
 
 type Staff = { id: string; name: string; role: string; staffNumber: string | null };
 type Status = "PRESENT" | "ABSENT" | "LATE";

@@ -5,19 +5,13 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  Filter,
-  GraduationCap,
-  HeartHandshake,
   Inbox,
   LifeBuoy,
   MessageCircle,
   MessageSquare,
   Search,
   Send,
-  ShieldAlert,
   Sparkles,
-  User,
-  Wallet,
 } from "lucide-react";
 
 type Child = { id: string; name: string; grade: string };

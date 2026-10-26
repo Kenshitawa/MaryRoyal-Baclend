@@ -9,7 +9,6 @@ import {
   Plus,
   Search,
   ShieldCheck,
-  Tag,
   Tv,
   Video,
 } from "lucide-react";

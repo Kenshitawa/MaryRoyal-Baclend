@@ -13,7 +13,6 @@ import {
   Sparkles,
   Tag,
   Trash2,
-  Wallet,
 } from "lucide-react";
 
 type FeeLine = {

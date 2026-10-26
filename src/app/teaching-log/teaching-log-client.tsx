@@ -7,10 +7,8 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock,
-  Filter,
   Plus,
   Search,
-  Sparkles,
   Users,
 } from "lucide-react";
 

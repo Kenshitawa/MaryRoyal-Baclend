@@ -78,7 +78,7 @@ export default function PrivacyPage() {
               </div>
             </div>
             <p className="mt-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-              Medical conditions, allergies, and emergency protocols are strictly shielded. Every access to a learner's
+              Medical conditions, allergies, and emergency protocols are strictly shielded. Every access to a learner&apos;s
               health profile generates an immutable audit record logging the viewing staff member and timestamp.
             </p>
           </div>

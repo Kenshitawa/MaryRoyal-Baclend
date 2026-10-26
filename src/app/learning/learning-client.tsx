@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BookOpenCheck,
-  Brain,
   CheckCircle2,
   ChevronRight,
   CirclePlay,
@@ -13,9 +12,7 @@ import {
   Gamepad2,
   GraduationCap,
   Lightbulb,
-  Sparkles,
   Trophy,
-  Video,
 } from "lucide-react";
 
 type Learner = { id: string; name: string; admissionNo: string; grade: string };

@@ -1,18 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LearnerLink } from "@/components/learner-link";
-import {
-  Calendar,
-  Check,
-  CheckCircle2,
-  Clock,
-  Filter,
-  Save,
-  UserCheck,
-  Users,
-  UserX,
-} from "lucide-react";
+import { Check, Save } from "lucide-react";
 
 type Row = {
   id: string;
