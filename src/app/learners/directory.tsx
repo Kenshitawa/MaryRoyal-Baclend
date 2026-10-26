@@ -12,9 +12,9 @@ import {
   Plus,
   Printer,
   Search,
-  ShieldCheck,
   UserCheck,
   Users,
+  ChevronRight,
 } from "lucide-react";
 import { LearnerLink } from "@/components/learner-link";
 
@@ -462,6 +462,7 @@ export default function LearnerDirectory({
                     <th className="px-5 py-3.5">Status</th>
                     <th className="px-5 py-3.5">Portal Access</th>
                     {canApprove && <th className="px-5 py-3.5">Actions</th>}
+                    <th className="px-5 py-3.5 text-right">Profile</th>
                   </>
                 )}
               </tr>
@@ -470,7 +471,7 @@ export default function LearnerDirectory({
               {busy ? (
                 <tr>
                   <td
-                    colSpan={identityOnly ? 3 : canApprove ? 7 : 6}
+                    colSpan={identityOnly ? 3 : canApprove ? 8 : 7}
                     className="p-12 text-center text-slate-500"
                   >
                     <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -480,7 +481,7 @@ export default function LearnerDirectory({
               ) : filteredRows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={identityOnly ? 3 : canApprove ? 7 : 6}
+                    colSpan={identityOnly ? 3 : canApprove ? 8 : 7}
                     className="p-12 text-center text-slate-500"
                   >
                     No learners found matching the search criteria.
@@ -565,6 +566,16 @@ export default function LearnerDirectory({
                               )}
                             </td>
                           )}
+
+                          <td className="px-5 py-4 text-right">
+                            <Link
+                              href={`/learners/${learner.id}`}
+                              className="inline-flex min-h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-blue-700 shadow-xs transition hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-blue-400 dark:hover:bg-slate-800"
+                            >
+                              <span>View Profile</span>
+                              <ChevronRight size={13} />
+                            </Link>
+                          </td>
                         </>
                       )}
                     </tr>
