@@ -39,12 +39,12 @@ export function ThemeProvider({
   useEffect(() => {
     // 1. Initialize Light/Dark
     const savedTheme = localStorage.getItem("mary-theme") as UITheme | null;
-    const isDark = savedTheme === "dark" || document.documentElement.dataset.theme === "dark";
+    const isDark = savedTheme === "dark";
     if (isDark) {
       document.documentElement.dataset.theme = "dark";
       setThemeState("dark");
     } else {
-      delete document.documentElement.dataset.theme;
+      document.documentElement.dataset.theme = "light";
       setThemeState("light");
     }
 
@@ -61,7 +61,7 @@ export function ThemeProvider({
     if (newTheme === "dark") {
       document.documentElement.dataset.theme = "dark";
     } else {
-      delete document.documentElement.dataset.theme;
+      document.documentElement.dataset.theme = "light";
     }
     localStorage.setItem("mary-theme", newTheme);
     setThemeState(newTheme);

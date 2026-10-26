@@ -12,8 +12,7 @@ export default function ThemeToggle({ compact = false }: { compact?: boolean }) 
   }, []);
   function toggle() {
     const enabled = !dark;
-    if (enabled) document.documentElement.dataset.theme = "dark";
-    else delete document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = enabled ? "dark" : "light";
     localStorage.setItem("mary-theme", enabled ? "dark" : "light");
     setDark(enabled);
   }

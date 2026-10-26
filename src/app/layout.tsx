@@ -27,7 +27,8 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `try {
-              if (localStorage.getItem("mary-theme") === "dark") document.documentElement.dataset.theme = "dark";
+              const t = localStorage.getItem("mary-theme");
+              document.documentElement.dataset.theme = t === "dark" ? "dark" : "light";
               const s = localStorage.getItem("mary-style");
               if (s) document.documentElement.dataset.style = s;
             } catch {}`
