@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
 import { canInScope } from "@/lib/permissions";
 import PortalFrame from "@/components/portal-frame";
-import { Download, Users, BookOpenCheck, ReceiptText, FileBarChart2, ArrowRight } from "lucide-react";
+import { Download, Users, BookOpenCheck, ReceiptText, FileBarChart2 } from "lucide-react";
 
 export default async function ReportsPage() {
   const token = (await cookies()).get("mary_session")?.value;
@@ -127,40 +127,59 @@ export default async function ReportsPage() {
               </a>
             </div>
 
-            {/* Future exports placeholder */}
-            {[
-              {
-                title: "Released Assessment Report (CSV)",
-                desc: "CBC competency scores and descriptors for released assessment batches.",
-                count: `${assessments} released records`,
-                available: false,
-              },
-              {
-                title: "Fee Collections Summary (CSV)",
-                desc: "Invoice totals, amounts paid, outstanding balances per learner.",
-                count: `${invoices} invoices`,
-                available: false,
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="flex flex-col gap-4 rounded-2xl border border-dashed border-slate-200 bg-white p-5 opacity-70 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/60"
-              >
-                <div className="flex items-start gap-4">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-50 text-slate-400 dark:bg-slate-800">
-                    <FileBarChart2 size={20} />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.title}</h3>
-                    <p className="mt-1 text-xs text-slate-500">{item.desc}</p>
-                    <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.count}</p>
-                  </div>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-400 dark:border-slate-700">
-                  Coming soon <ArrowRight size={13} />
+            {/* Released Assessment Report */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-blue-200 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="flex items-start gap-4">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-400">
+                  <FileBarChart2 size={20} />
                 </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Released Assessment Report (CSV)
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    CBC competency scores, performance descriptors (EE/ME/AE/BE), strands, and teacher remarks.
+                  </p>
+                  <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                    {assessments} released records
+                  </p>
+                </div>
               </div>
-            ))}
+              <a
+                href="/api/reports/assessments"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-700 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-purple-700/20 transition hover:bg-purple-800"
+              >
+                <Download size={15} />
+                Download CSV
+              </a>
+            </div>
+
+            {/* Fee Collections Summary */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-blue-200 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="flex items-start gap-4">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+                  <FileBarChart2 size={20} />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Fee Collections &amp; Balances Summary (CSV)
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Term-by-term invoice totals, credit adjustments, amounts paid, and net outstanding balances.
+                  </p>
+                  <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    {invoices} invoices tracked
+                  </p>
+                </div>
+              </div>
+              <a
+                href="/api/reports/finance"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-700/20 transition hover:bg-emerald-800"
+              >
+                <Download size={15} />
+                Download CSV
+              </a>
+            </div>
           </div>
         </section>
       </main>
