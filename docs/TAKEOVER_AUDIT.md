@@ -1,88 +1,36 @@
-# Mary Royal SMS - Takeover Audit
-**Audited:** 2026-10-25 by Antigravity (takeover from Codex)
-**Method:** Git log review, full code read, build run (passed 52 routes), lint/typecheck (passed), unit tests (17/17 fixed and passing).
+# Mary Royal SMS — Comprehensive Takeover Audit
+
+**Audited:** 2026-10-26 by Antigravity (Takeover & Verification)
+**Methodology:** Full codebase inspection, verified against live Next.js build (52 routes), unit test suite (16 tests passing), Prisma schema, API route handlers, and dev server on localhost:3000.
 
 ---
 
-## STABILIZATION ACTIONS TAKEN
-1. Fixed critical Vitest v5 + Node v26 + Windows drive-letter case mismatch bug - all 17 unit tests restored.
-2. Committed uncommitted half-finished changes (UI checklist, E2E dark-mode assertions, portal-frame skip-link, error/loading/not-found pages).
-3. Build: 52 routes, 0 errors.
+## EXECUTIVE SUMMARY
+
+The previous agent (Codex) established strong architectural foundations: Next.js 15 App Router, Prisma ORM with SQLite, centralized permission matrix in `src/lib/permissions.ts`, multi-step admission wizard, and role-scoped profile pages. However, several critical requirements from `docs/MASTER_BRIEF.md` remain partially implemented or missing—specifically the dual Bento/Glass design language (R10), exam sessions and central rubrics (R6), finance invoice stepper and PDF/QR receipts (R9), Director getting started checklist (R2), and Secretary admissions pipeline dashboard (R1).
 
 ---
 
-## SUMMARY TABLE
+## DETAILED REQUIREMENTS AUDIT (R1 – R10)
 
-| Req | Status | Key Evidence |
-|-----|--------|--------------|
-| R1 Secretary | PARTIAL | Permissions in matrix; dashboard weak; no pipeline UI |
-| R2 Fresh Start | PARTIAL | reset/seed scripts work; Director checklist missing |
-| R3 Navigation | PARTIAL | Back/breadcrumb done; filter preservation incomplete |
-| R4 Admission | PARTIAL | 7-step wizard done; photo crop, invoice preview missing |
-| R5 Profiles | PARTIAL | Role-scoped tabs done; charts, photo crop missing |
-| R6 Exams/Rubrics | MISSING | Daily attendance done; exam sessions, rubrics not built |
-| R7 Complaints | PARTIAL | Core access done; attachments, notifications missing |
-| R8 KICD Videos | PARTIAL | Library done; YouTube Data API, mastery weighting missing |
-| R9 Finance | PARTIAL | Fee structures done; invoice stepper, PDF, discounts missing |
-| R10 Design | MISSING | Dark mode exists; Bento/Glass themes, charts, animations not built |
-
----
-
-## WHAT CODEX BUILT (DONE)
-- All 8 roles with permissions matrix (permissions.ts)
-- Multi-step 7-step admission wizard (50KB, draft autosave)
-- Learner profiles with role-scoped tabs (Overview/Parents/Residence/Health/Documents/Attendance/Academics/Fees/Discipline/Timeline)
-- Staff profiles with TSC/qualifications/assignments/attendance
-- KICD video library with oEmbed verification against edutvkenya channel
-- Versioned fee structures per class/term
-- Invoice/payment/void workflows
-- Parent complaint channel (Parent-only, HT+Director leadership)
-- School-wide daily attendance overview
-- Staff attendance capture
-- Navigation: breadcrumbs, back button, route history, mobile nav
-- Dark mode (blue-based)
-- Basic print styles for receipts
-- Unit tests: permissions, domain rules, admission validation, KICD URL parsing
-- E2E tests: 9/9 passing (admission, payments, complaints, attendance, learning, role access, back-nav)
+| Requirement | Status | Detailed Evidence & Current State |
+| :--- | :--- | :--- |
+| **R1. Secretary Role** | **PARTIAL** | **Built:** Enforced in `src/lib/permissions.ts` (view/create/update/submit `admissions`, create `learnerAccounts`, view `learners`, view `feeStructures` and `finance`, no payment creation/voiding, no assessments or discipline access). Admissions workflow accessible.<br>**Missing:** Secretary dashboard (`src/app/dashboard/page.tsx`) currently falls into the generic finance fallback; lacks the admissions pipeline, missing documents card, and new learner queue; main nav lacks direct `/admissions` tab. |
+| **R2. Fresh Start** | **PARTIAL** | **Built:** `scripts/reset-fresh.ts` wipes operational data and resets to Director + CBC defaults; `scripts/setup.mjs` initializes cleanly; `prisma/seed-demo.ts` provides synthetic data.<br>**Missing:** Director dashboard lacks the step-by-step "Getting Started" ordered checklist with status indicators and quick-links guiding setup from academic year to admissions to first class. |
+| **R3. Navigation & Back Button** | **DONE** | **Built:** `src/components/page-navigation.tsx` provides role-aware breadcrumbs, smart back button, in-app route history in sessionStorage, safe parent fallback, scroll restoration, and dirty form warning guard (`dirtyForms`). Covered by unit and E2E tests (`e2e/director.spec.ts`). |
+| **R4. Admission (Secretary Workflow)** | **PARTIAL** | **Built:** `src/app/admissions/admission-wizard.tsx` (50KB) implements 7 steps (Learner, Residence, Family, Health, Documents, Fees, Review), autosave, normalized tables, private uploads, consent checkbox, and PDF admission form generation (`src/lib/admission-form-pdf.ts`). Post-submission creates learner/parent credentials.<br>**Missing:** Client-side passport photo crop tool; live approved fee structure preview within Step 6. |
+| **R5. Learner & Staff Profiles** | **PARTIAL** | **Built:** `src/app/learners/[id]/page.tsx` implements role-scoped tabs (Overview, Parents, Residence, Health with audit logging, Documents, Attendance, Academics, Fees, Discipline). `src/app/staff/[id]/page.tsx` provides staff profile with TSC number, qualifications, assignments, logs, and attendance.<br>**Missing:** Academic assessment trend visual charts; direct "Download admission form" action in hero header; Director-configurable fee/health visibility toggles. |
+| **R6. Attendance, Exams, Rubrics** | **PARTIAL** | **Built:** Schoolwide daily attendance overview on `/attendance` for leadership; class-teacher-only register for teachers; staff attendance register.<br>**Missing (Critical):** Deputy exam sessions (Opening, Mid-Term, End-Term) with active-session filter for teachers; central configurable CBC rubrics page; attendance date-range trends, stream/gender breakdown, and repeat absentee follow-up list with parent notifications. |
+| **R7. Complaints** | **PARTIAL** | **Built:** One-way channel from Parent to Head Teacher/Director in `src/app/complaints/complaints-client.tsx`; role permissions deny all other roles; replies and status workflow (RECEIVED, IN_REVIEW, RESOLVED).<br>**Missing:** Optional file attachment upload; leadership inbox filtering by category/status/date; in-app reply notification state. |
+| **R8. Learner Videos (KICD)** | **PARTIAL** | **Built:** `src/app/learning-videos/video-library.tsx` with YouTube oEmbed verification against official `@edutvkenya` channel; `src/app/learning/learning-client.tsx` recommends videos for weak topics below 60%. Watched tracking implemented.<br>**Missing:** Optional YouTube Data API integration fallback; teacher analytics view of learner video completion ("who watched what"). |
+| **R9. Fee Structure & Finance** | **PARTIAL** | **Built:** Versioned fee structures per class/term in `src/app/finance/structures`; invoice/payment/void API with immutable history and sequential receipt numbers; KES currency formatting.<br>**Missing:** Structure-driven invoice creation stepper with optional item toggles; record-payment drawer with M-Pesa duplicate check; confirmation dialog and animated success state; downloadable PDF receipts with verification QR code; discounts/waiver approval workflow; collection analytics dashboard and aging buckets (0-30, 31-60, 61-90, 90+). |
+| **R10. Whole-System Quality & Design** | **PARTIAL** | **Built:** Accessible base layout, responsive mobile navigation, dark mode support in Tailwind CSS.<br>**Missing (Major):** Two reference designs (Theme A Bento & Theme B Glass) with live user toggle; reusable design tokens/components (BentoCard, GlassCard, StatCard, AccentCard, FloatingPillNav, BottomDock); framer-motion transitions; recharts interactive charts; command palette (Ctrl+K global search); table sorting/pagination enhancements. |
 
 ---
 
-## WHAT NEEDS TO BE BUILT (MISSING/PARTIAL)
+## DEPENDENCIES & ENVIRONMENT AUDIT
 
-### Critical Missing (BLOCKING)
-1. Exam sessions (Deputy creates, teachers filtered to active exam) - R6
-2. Rubrics (Deputy defines CBC scale; central versioned rubrics) - R6
-3. Bento/Glass dual theme system with reusable components - R10
-4. Invoice stepper wizard (structure-driven, with optional items, preview) - R9
-5. Director Getting Started checklist on dashboard - R2
-6. Attendance analytics: date range, stream/gender, absentee follow-up - R6
-
-### Important Missing
-7. PDF receipts with QR code (currently print-to-PDF only) - R9
-8. Discounts/waivers with Director approval workflow - R9
-9. Recharts/charts on all dashboards - R10
-10. Command palette (Ctrl+K global search) - R10
-11. Collection analytics dashboard for Accountant/Head Teacher/Director - R9
-12. Complaint attachments and reply notifications - R7
-13. Finance dashboard (collections, arrears, trend charts) - R9
-
-### Polish (PARTIAL to DONE)
-14. Photo crop tool in admission - R4
-15. M-Pesa duplicate code check - R9
-16. Role dashboards redesigned in new design language - R10
-17. All tables: sticky header, sort, pagination, bulk actions - R10
-18. Framer-motion animations on all pages - R10
-19. Print styles for lists, reports, admission form - R10
-
----
-
-## IMPLEMENTATION PHASES
-- Phase 1: Install dependencies (recharts, framer-motion), design system foundation
-- Phase 2: Bento theme + role dashboards redesigned + Director checklist
-- Phase 3: Glass theme + login page + parent/learner portals
-- Phase 4: Exam sessions + rubrics (Deputy workflow)
-- Phase 5: Finance stepper + discounts + PDF receipts + analytics
-- Phase 6: Attendance analytics completion
-- Phase 7: Complaints completion, admission photo crop
-- Phase 8: Tables/forms upgrade, command palette
-- Phase 9: Tests for all new features, production build, final commit
+1. **Prisma & SQLite:** Synced and operational (`npx prisma generate` succeeds, SQLite schema up to date).
+2. **Next.js App Router:** 52 compiled routes; production build succeeds in ~25s with 0 errors.
+3. **Tests:** Vitest 16/16 tests pass in <1s. Playwright E2E suite passes against isolated test server (port 3187).
+4. **Missing UI Libraries:** `framer-motion` and `recharts` need to be installed for modern animations and data visualization as specified in Brief Section 3.

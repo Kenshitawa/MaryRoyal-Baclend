@@ -60,6 +60,11 @@ model User {
   staffAttendanceRecords StaffAttendance[] @relation("StaffAttendanceUser")
   staffAttendanceEntered StaffAttendance[] @relation("StaffAttendanceRecorder")
   disciplineIncidentsRecorded DisciplineIncident[] @relation("DisciplineRecorder")
+  uiTheme             String?            @default("system")
+  examSessionsCreated ExamSession[]      @relation("ExamSessionCreator")
+  rubricsCreated      CbcRubric[]        @relation("RubricCreator")
+  waiversRequested    FeeWaiver[]        @relation("WaiverRequester")
+  waiversApproved     FeeWaiver[]        @relation("WaiverApprover")
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -338,6 +343,8 @@ model Complaint {
   assignedToId String?
   assignedTo  User?    @relation("ComplaintAssignee", fields: [assignedToId], references: [id])
   learnerId   String?
+  attachmentKey String?
+  attachmentName String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   replies     ComplaintReply[]
@@ -369,6 +376,9 @@ model Assessment {
   reviewComment String?
   status      String             @default("DRAFT")
   version     Int                @default(1)
+  examSessionId String?
+  examSession ExamSession?       @relation(fields: [examSessionId], references: [id])
+  rubricCode  String?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   history     AssessmentHistory[]
@@ -406,6 +416,7 @@ model FeeInvoice {
   createdAt    DateTime      @default(now())
   lines        InvoiceLine[]
   payments     FeePayment[]
+  waivers      FeeWaiver[]
   @@unique([learnerId, term])
   @@index([term, status])
 }
@@ -631,4 +642,70 @@ model DisciplineIncident {
 
   @@index([learnerId, incidentAt])
   @@index([status, followUpAt])
+}
+
+model ExamSession {
+  id                 String       @id @default(cuid())
+  name               String       // e.g. "2026 Term 1 End-Term"
+  term               String       // e.g. "2026 Term 1"
+  status             String       @default("DRAFT") // DRAFT, ACTIVE, CLOSED, PUBLISHED
+  startDate          DateTime?
+  endDate            DateTime?
+  marksOpenAt        DateTime?
+  marksCloseAt       DateTime?
+  classesJson        String       @default("[]")
+  subjectsJson       String       @default("[]")
+  timetableJson      String       @default("[]")
+  reopenReason       String?
+  reopenApprovedById String?
+  createdById        String
+  createdBy          User         @relation("ExamSessionCreator", fields: [createdById], references: [id])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  assessments        Assessment[]
+
+  @@index([term, status])
+  @@index([createdById])
+}
+
+model CbcRubric {
+  id            String   @id @default(cuid())
+  version       Int      @default(1)
+  code          String   // EE, ME, AE, BE, etc.
+  label         String   // Exceeding Expectations
+  minScore      Float
+  maxScore      Float
+  descriptor    String
+  color         String   // Hex or color identifier
+  learningArea  String?
+  gradeBand     String?
+  effectiveDate DateTime @default(now())
+  active        Boolean  @default(true)
+  createdById   String
+  createdBy     User     @relation("RubricCreator", fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([code, version])
+  @@index([gradeBand, learningArea])
+}
+
+model FeeWaiver {
+  id            String     @id @default(cuid())
+  invoiceId     String
+  invoice       FeeInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount        Int
+  reason        String
+  status        String     @default("PENDING") // PENDING, APPROVED, REJECTED
+  requestedById String
+  requestedBy   User       @relation("WaiverRequester", fields: [requestedById], references: [id])
+  approvedById  String?
+  approvedBy    User?      @relation("WaiverApprover", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  decisionNote  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([invoiceId, status])
+  @@index([requestedById])
 }
