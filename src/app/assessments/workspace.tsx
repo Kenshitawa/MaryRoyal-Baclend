@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Calendar, Sparkles, BookOpen, CheckCircle2, RotateCcw, Send, Check, AlertCircle } from "lucide-react";
+import { Calendar, Sparkles } from "lucide-react";
 import { ThemedCard } from "@/components/design-system/card";
 import { StatusPill } from "@/components/design-system/status-pill";
 import { LearnerLink } from "@/components/learner-link";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { ShieldCheck, Plus, Trash2, AlertTriangle, Save, CheckCircle2, History } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Save } from "lucide-react";
 import { ThemedCard } from "@/components/design-system/card";
 
 interface RubricLevel {
@@ -54,7 +54,6 @@ const defaultCbcLevels: RubricLevel[] = [
 export default function RubricsClient({ canManage }: { canManage: boolean }) {
   const [levels, setLevels] = useState<RubricLevel[]>(defaultCbcLevels);
   const [totalAssessments, setTotalAssessments] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [confirmImpact, setConfirmImpact] = useState(false);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -70,9 +69,7 @@ export default function RubricsClient({ canManage }: { canManage: boolean }) {
         setTotalAssessments(data.totalAssessments || 0);
       }
     } catch {
-      // fallback
-    } finally {
-      setLoading(false);
+      // Keep the configured defaults when the rubric endpoint is unavailable.
     }
   }, []);
 
