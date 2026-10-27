@@ -9,7 +9,7 @@ The app is a **single Next.js full-stack application**. UI pages, server compone
 - **Vercel + Supabase Postgres + Supabase Storage**: use Vercel for the complete Next.js project. The upload adapter must use a private Supabase Storage bucket because serverless filesystems are temporary.
 - **Render + Supabase Postgres + Render persistent disk**: use Render for the complete Next.js project. The included `render.yaml` mounts a persistent disk for private uploads. A persistent disk changes Render deploy behavior and may require a paid service tier.
 
-Do not use both hosts for split halves. The Vercel/Render project root must contain the complete source tree (`src/app`, `src/lib`, `src/components`, `prisma`, `scripts`, `package.json` and lockfile). `MaryRoyal-frontend` is being prepared as this complete deployable checkout. `MaryRoyal-Baclend` is a backend source snapshot and does not satisfy the root requirement by itself.
+Do not use both hosts for split halves. The Vercel/Render project root must contain the complete source tree (`src/app`, `src/lib`, `src/components`, `prisma`, `scripts`, `package.json` and lockfile). `MaryRoyal-frontend` is the complete deployable checkout. `MaryRoyal-Baclend` is a backend source snapshot and does not satisfy the root requirement by itself.
 
 ## PostgreSQL and migrations
 
@@ -27,7 +27,7 @@ The PostgreSQL schema validates and its initial migration is generated from the 
 
 ## Vercel + Supabase setup
 
-1. Connect `MaryRoyal-frontend` after the complete monolith commit appears, select the repository root, and keep the Next.js framework preset. The included `vercel.json` selects `npm ci` and `npm run build:production`.
+1. Connect `MaryRoyal-frontend`, select the repository root, and keep the Next.js framework preset. Its current `main` branch contains the complete monolith. The included `vercel.json` selects `npm ci` and `npm run build:production`.
 2. Create a Supabase Postgres project in a region near the app. In Vercel Project Settings → Environment Variables, set:
    - `DATABASE_URL`: Supabase transaction-pooler URL for serverless runtime.
    - `DIRECT_URL`: Supabase session/direct URL for migrations.
