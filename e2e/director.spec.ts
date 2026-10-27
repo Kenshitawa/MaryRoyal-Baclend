@@ -222,7 +222,8 @@ test("assigned teachers publish work, learners submit it, and school leaders con
 });
 
 test("breadcrumbs, safe back, mobile detail bar and unsaved-form warning work for every role",async({page,playwright})=>{
-  test.setTimeout(180_000);
+  // This intentionally visits each of the eight roles and tests both app and browser history.
+  test.setTimeout(360_000);
  await page.addInitScript(()=>window.localStorage.setItem("mary-theme","dark"));
  const roles=[
   {email:"director@maryroyal.ac.ke",home:"/dashboard",target:"/learners",label:"Learners"},

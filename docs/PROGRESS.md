@@ -238,3 +238,10 @@
 - **Tested:** `npm run typecheck` passed; `npm test` passed (24 tests); `npm run lint` completed with 0 errors and the existing 39 warnings; local home and `/api/health` returned 200/ok; `git diff --check` passed. `npm run test:e2e` passed 8/9; its final cross-role navigation scenario timed out waiting for the saved dark theme on `<html>` (3.2 minutes), an existing unrelated test/UI issue.
 - **Known issues:** Full E2E remains not green. The Vercel multipart cap still needs an actual host deployment smoke test; platform rejection can happen before the app receives the request. Larger than 4 MiB files require a direct/resumable private-storage upload path.
 - **Next:** Resolve the remaining E2E dark-theme persistence failure and complete production gates in `docs/ROADMAP.md`; live PostgreSQL, backup/restore and privacy readiness remain open.
+
+## Browser-suite timeout diagnosis — 2026-10-27
+
+- **Built:** Kept the eight-role navigation/theme/back-forward assertions and gave this intentionally broad browser scenario a 6-minute test budget. Reproduced the scenario alone; saved and applied theme values were both `dark` for all eight roles and the scenario passed. This indicates the previous full-run failure was the test's 3-minute runtime budget under load, rather than a lost theme preference.
+- **Tested:** `npm run seed:demo` completed; isolated `npx playwright test -g 'breadcrumbs, safe back' --reporter=line` passed (1/1, 3.1 minutes). Full suite with the new budget is pending.
+- **Known issues:** The remaining production/security/data-readiness items in `docs/ROADMAP.md` still block real student data. No cloud service has been configured or migrated.
+- **Next:** Rerun full unit, E2E and permission suites, then implement and document database hardening and operational safeguards that can be verified without live credentials.
