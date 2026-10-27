@@ -22,7 +22,10 @@ For each phase: read this file; run the app locally; run lint, type-check and av
 - `npm run reset:fresh`: interactively clear school data while preserving the Director and system defaults; use `-- --yes` only when a reset is explicitly intended.
 - `npm run dev`: local development server.
 - `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`: quality checks.
-- `npm run backup`: create a local database backup.
+- `npm run backup`: create an encrypted PostgreSQL backup using `DIRECT_URL` and `BACKUP_ENCRYPTION_KEY`.
+- `npm run backup:sqlite`: create a local SQLite backup for development only.
+- `npm run restore:postgres`: restore an encrypted backup into a separate empty PostgreSQL database after explicit target confirmation.
+- `npm run retention:enforce`: dry-run abandoned admission draft cleanup; actual purge requires an explicit `RETENTION_APPLY` value.
 - `npm run build:production`: build using the PostgreSQL Prisma schema for deployment hosts.
 - `npm run db:migrate:production`: apply PostgreSQL migrations using `DIRECT_URL`.
 - `npm run bootstrap:director`: one-time empty-database setup using temporary `DIRECTOR_NAME`, `DIRECTOR_EMAIL`, and `DIRECTOR_PASSWORD`; never run demo seed/reset against production.

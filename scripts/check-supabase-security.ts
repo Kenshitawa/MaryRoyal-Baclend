@@ -42,12 +42,24 @@ async function main() {
       if (table[authKey] === true) failures.push(`${table.table_name}: authenticated ${method} granted`);
     }
 
-    const response = await fetch(`${url}/rest/v1/${encodeURIComponent(String(table.table_name))}?select=*`, {
-      headers: { apikey: apiKey!, authorization: `Bearer ${apiKey!}` },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (response.ok) failures.push(`${table.table_name}: public Data API returned ${response.status}`);
-    await response.body?.cancel();
+    const endpoint = `${url}/rest/v1/${encodeURIComponent(String(table.table_name))}`;
+    const headers = { apikey: apiKey!, authorization: `Bearer ${apiKey!}`, "content-type": "application/json", prefer: "return=minimal" };
+    const attempts = [
+      { label: "SELECT", url: `${endpoint}?select=*`, method: "GET" },
+      { label: "INSERT", url: endpoint, method: "POST", body: "{}" },
+      { label: "UPDATE", url: `${endpoint}?id=eq.__mary_royal_security_probe__`, method: "PATCH", body: "{}" },
+      { label: "DELETE", url: `${endpoint}?id=eq.__mary_royal_security_probe__`, method: "DELETE" },
+    ] as const;
+    for (const attempt of attempts) {
+      const response = await fetch(attempt.url, {
+        method: attempt.method,
+        headers,
+        ...("body" in attempt ? { body: attempt.body } : {}),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (response.ok) failures.push(`${table.table_name}: public Data API ${attempt.label} returned ${response.status}`);
+      await response.body?.cancel();
+    }
   }
 
   if (failures.length) throw new Error(`Supabase public API security check failed (${failures.length} findings):\n${failures.join("\n")}`);
