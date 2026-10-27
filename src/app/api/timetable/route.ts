@@ -77,6 +77,7 @@ const patchSchema = z.object({
   action: z.enum(["verify", "update"]),
   scheduleJson: z.string().optional(),
   title: z.string().trim().max(80).optional(),
+  publishDirectly: z.boolean().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -104,8 +105,28 @@ export async function PATCH(request: Request) {
 
   if (parsed.data.action === "update") {
     if (!can(user.role as never, "timetable", "update")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    await db.schoolTimetable.update({ where: { id: tt.id }, data: { scheduleJson: parsed.data.scheduleJson ?? tt.scheduleJson, title: parsed.data.title ?? tt.title, status: "DRAFT", verifiedById: null, verifiedAt: null } });
-    return NextResponse.json({ ok: true });
+    const isLeadership = ["HEAD_TEACHER", "DIRECTOR"].includes(user.role);
+    const publishDirectly = Boolean(parsed.data.publishDirectly && isLeadership);
+
+    await db.schoolTimetable.update({
+      where: { id: tt.id },
+      data: {
+        scheduleJson: parsed.data.scheduleJson ?? tt.scheduleJson,
+        title: parsed.data.title ?? tt.title,
+        status: publishDirectly ? "PUBLISHED" : "DRAFT",
+        verifiedById: publishDirectly ? user.id : null,
+        verifiedAt: publishDirectly ? new Date() : null,
+      },
+    });
+
+    if (publishDirectly) {
+      const teachers = await db.user.findMany({ where: { role: { in: ["TEACHER", "DEPUTY"] } }, select: { id: true } });
+      for (const t of teachers) {
+        await createNotification({ userId: t.id, title: "Timetable Updated", message: `Updates made to "${tt.title}" are now live. Please review your lesson schedule.`, type: "INFO", link: "/timetable" });
+      }
+    }
+
+    return NextResponse.json({ ok: true, status: publishDirectly ? "PUBLISHED" : "DRAFT" });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

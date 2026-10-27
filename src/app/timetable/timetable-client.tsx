@@ -10,6 +10,8 @@ import {
   Send,
   ShieldCheck,
   Printer,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 export interface TimetableSlot {
@@ -126,6 +128,7 @@ export default function TimetableClient({
   const [loading, setLoading] = useState(false);
 
   // Builder state
+  const [editingTimetableId, setEditingTimetableId] = useState<string | null>(null);
   const [builderTitle, setBuilderTitle] = useState("Term 1 2026 Timetable");
   const [builderTerm, setBuilderTerm] = useState("Term 1");
   const [builderYear, setBuilderYear] = useState(2026);
@@ -182,6 +185,24 @@ export default function TimetableClient({
     } catch (e) {
       console.error(e);
     }
+  }
+
+  function handleStartEditing(tt: TimetableRecord) {
+    setEditingTimetableId(tt.id);
+    setBuilderTitle(tt.title);
+    setBuilderTerm(tt.term);
+    setBuilderYear(tt.year);
+    try {
+      const parsed = JSON.parse(tt.scheduleJson);
+      setBuilderSlots(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setBuilderSlots([]);
+    }
+    setActiveTab("builder");
+    setStatusMessage({
+      text: `Editing "${tt.title}". Click on any period in the builder grid below to update teachers, subjects, or rooms.`,
+      type: "success",
+    });
   }
 
   // AI-Assisted Timetable Generator (Local heuristic schedule synthesis)
@@ -253,6 +274,41 @@ export default function TimetableClient({
       setStatusMessage({ text: "Timetable draft saved successfully!", type: "success" });
       await refreshTimetables();
       setSelectedTimetableId(data.timetable.id);
+      setActiveTab("view");
+    } catch (e: unknown) {
+      const err = e as Error;
+      setStatusMessage({ text: err.message, type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUpdateTimetable(publishDirectly = false) {
+    if (!editingTimetableId) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/timetable", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          id: editingTimetableId,
+          title: builderTitle,
+          scheduleJson: JSON.stringify(builderSlots),
+          publishDirectly,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update timetable");
+      setStatusMessage({
+        text: publishDirectly
+          ? "Timetable updated and published live to all teachers!"
+          : "Timetable changes saved successfully.",
+        type: "success",
+      });
+      await refreshTimetables();
+      setSelectedTimetableId(editingTimetableId);
+      setEditingTimetableId(null);
       setActiveTab("view");
     } catch (e: unknown) {
       const err = e as Error;
@@ -545,6 +601,17 @@ export default function TimetableClient({
                   {activeTimetable.status}
                 </span>
 
+                {isAdmin && (
+                  <button
+                    onClick={() => handleStartEditing(activeTimetable)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 rounded-lg text-xs font-semibold transition"
+                    title="Edit lessons, teachers or periods in this timetable"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit Timetable
+                  </button>
+                )}
+
                 {isAdmin && activeTimetable.status === "DRAFT" && (
                   <button
                     disabled={loading}
@@ -714,31 +781,79 @@ export default function TimetableClient({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-600" />
-                AI-Assisted Timetable Builder
+                {editingTimetableId ? (
+                  <>
+                    <Pencil className="h-5 w-5 text-amber-600" />
+                    Editing Timetable: <span className="text-blue-700 dark:text-blue-400">{builderTitle}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5 text-blue-600" />
+                    AI-Assisted Timetable Builder
+                  </>
+                )}
               </h2>
               <p className="text-xs text-gray-500 mt-1">
-                Generate automatic weekly schedules based on KICD CBC guidelines and teacher allocations
+                {editingTimetableId
+                  ? "Make live adjustments to lessons, teacher allocations, or rooms. Click any slot below to edit."
+                  : "Generate automatic weekly schedules based on KICD CBC guidelines and teacher allocations"}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleGenerateAiSchedule}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-medium rounded-lg text-sm shadow transition"
-              >
-                <Sparkles className="h-4 w-4" />
-                Regenerate with AI
-              </button>
-              <button
-                type="button"
-                disabled={loading || builderSlots.length === 0}
-                onClick={handleSaveDraft}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg text-sm shadow transition disabled:opacity-50"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Save Master Draft
-              </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {editingTimetableId ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingTimetableId(null);
+                      setActiveTab("view");
+                    }}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition"
+                  >
+                    Cancel Edit
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading || builderSlots.length === 0}
+                    onClick={() => handleUpdateTimetable(false)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg text-sm shadow transition disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Save Changes
+                  </button>
+                  {isHeadOrDirector && (
+                    <button
+                      type="button"
+                      disabled={loading || builderSlots.length === 0}
+                      onClick={() => handleUpdateTimetable(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg text-sm shadow transition disabled:opacity-50"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Save & Publish Live
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleGenerateAiSchedule}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-medium rounded-lg text-sm shadow transition"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Regenerate with AI
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading || builderSlots.length === 0}
+                    onClick={handleSaveDraft}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg text-sm shadow transition disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Save Master Draft
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -942,26 +1057,39 @@ export default function TimetableClient({
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setEditingSlot(null)}
-                className="px-4 py-2 border rounded text-sm font-medium"
-              >
-                Cancel
-              </button>
+            <div className="flex justify-between items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={() => {
-                  setBuilderSlots((prev) =>
-                    prev.map((s) => (s.id === editingSlot.id ? editingSlot : s))
-                  );
+                  setBuilderSlots((prev) => prev.filter((s) => s.id !== editingSlot.id));
                   setEditingSlot(null);
                 }}
-                className="px-4 py-2 bg-blue-700 text-white rounded text-sm font-medium hover:bg-blue-800"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg text-xs font-semibold transition"
               >
-                Save Lesson
+                <Trash2 className="h-4 w-4" />
+                Delete Lesson
               </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingSlot(null)}
+                  className="px-4 py-2 border rounded-lg text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBuilderSlots((prev) =>
+                      prev.map((s) => (s.id === editingSlot.id ? editingSlot : s))
+                    );
+                    setEditingSlot(null);
+                  }}
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-800"
+                >
+                  Save Lesson
+                </button>
+              </div>
             </div>
           </div>
         </div>
