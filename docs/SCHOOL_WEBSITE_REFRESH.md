@@ -4,7 +4,7 @@
 
 The public website is one static HTML page (`school-website-refresh/index.html`) served from cPanel; it has one shared stylesheet and one browser script. The authenticated Next.js school portal is a separate application on `portal.maryroyalschool.co.ke`.
 
-The mobile header hid its navigation panel but had no reliable interaction path: its `aria-controls` value did not match an element ID, and the nav panel's stacking context was below the full-screen overlay. The overlay could cover the menu even though the panel itself had a higher local z-index. The previous hero carousel also loaded several large images before users needed them.
+The public site and the authenticated Next.js portal are separate deployments. In the static page, the mobile menu used a translucent, blurred header treatment that reduced text clarity, and the page's school-highlights markup had an extra closing wrapper and an orphan label. The hero image also needed a predictable aspect ratio at narrow widths. The earlier carousel was already removed to avoid loading several large images before users needed them.
 
 ## Work completed
 
@@ -13,6 +13,7 @@ The mobile header hid its navigation panel but had no reliable interaction path:
 - Removed the autoplay hero carousel and used one optimized graduation image as the hero and social preview.
 - Added a responsive gallery and keyboard-operable lightbox. Existing source images were preserved.
 - Added descriptive alternate text, image dimensions, lazy loading below the fold, a 48px favicon, Apple touch icon, preload for the hero, canonical metadata, social cards, school JSON-LD, robots rules, sitemap, branded 404, and crawler noindex for the authenticated portal.
+- Repaired the school-highlights markup, reduced mobile typography, made the mobile navigation panel fully opaque and sharp, improved its spacing and touch targets, and made the hero photo scale with a fixed responsive aspect ratio. Renamed the phone action to “Call the school” so its result is clear.
 
 ## Supplied photo placement
 
@@ -24,7 +25,8 @@ All 11 supplied photos are used as optimized WebP assets. The graduation group p
 - Gallery lightbox opens and closes with keyboard input; no browser page errors.
 - Static validation: all 25 image elements include alt text and explicit dimensions; referenced image files exist. One 50-character title and one 155-character description; CSS parses and JavaScript passes `node --check`.
 - Portal `npm run lint`: 0 errors, 39 existing warnings in unrelated files. `npm run typecheck` and `npm run build:production` passed.
+- Latest static browser run at 360, 390, 768, 1024 and 1280 pixels: no horizontal overflow, no page errors, the mobile menu opens with a solid navy background and no backdrop blur, tapping a section link navigates and closes the panel, the hero image resizes to the available width, and all 24 referenced images load.
 
 ## Publishing follow-up
 
-The refreshed assets are local until copied to cPanel `/public_html`. Follow `school-website-refresh/UPLOAD.md`; then verify the live homepage, Login, sitemap, robots, 404 response and social-preview image. Remove the older public ZIP through cPanel File Manager. After publishing, add the canonical domain to Google Search Console, submit `/sitemap.xml`, request indexing and claim or verify the Google Business Profile.
+The new mobile fixes are local until copied to cPanel `/public_html`. A fresh upload archive is available at the repository root as `mary-royal-website-upload.zip`. The live homepage still serves the previous stylesheet. cPanel publishing could not be completed because the browser-control safety layer could not verify the active Chrome URL; it stopped further computer interaction. Follow `school-website-refresh/UPLOAD.md` to upload and extract the archive outside the public web root, then verify the live homepage, Login, sitemap, robots, 404 response and social-preview image. After publishing, add the canonical domain to Google Search Console, submit `/sitemap.xml`, request indexing and claim or verify the Google Business Profile.

@@ -301,3 +301,9 @@
 ## Live-site publish follow-up — 2026-10-27
 - Checked the public homepage after the user reported no visible change; it is still serving the previous page. The authenticated cPanel session is not available in the browser tool, so publication could not be performed in this run.
 - Prepared `mary-royal-website-upload.zip` at the repository root with the current public site files so the owner can extract its contents into `/public_html`. Do not upload the ZIP into the public document root and leave it there; delete it after extraction.
+
+## Public website mobile navigation repair — 2026-10-27
+- **Built:** Fixed malformed school highlights markup; simplified mobile type and spacing; replaced the blurred translucent mobile menu with an opaque, high-contrast panel; corrected responsive hero image sizing; clarified the phone CTA as “Call the school.” Packaged the complete static site in `mary-royal-website-upload.zip`.
+- **Tested:** Static browser smoke checks at 360, 390, 768, 1024 and 1280 px: all returned HTTP 200, no horizontal overflow or browser page errors, mobile menu opens/closes and section links navigate, and all 24 image references load. `git diff --check` passed. Live homepage remains HTTP 200 but still serves the old stylesheet.
+- **Known issues:** Publishing to cPanel is outstanding. Browser control stopped because its safety layer could not verify the active Chrome URL; no live files were overwritten. The archive is ready in the repository root.
+- **Next:** Upload and extract the archive contents into `/public_html`, preserving the existing `.htaccess`, verification files and `.well-known/`; verify the live mobile menu and images, then remove temporary ZIP files from the public document root.
