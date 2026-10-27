@@ -7,8 +7,8 @@ import { db } from "@/lib/db";
 import { assertCanInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
 import { admissionDocumentCategoryLabels, admissionDraftDataSchema } from "@/lib/admissions";
+import { readStoredFile } from "@/lib/file-storage";
 
-const storageRoot = join(process.cwd(), "private-uploads", "admissions");
 const blue = rgb(0.114, 0.306, 0.847);
 const navy = rgb(0.055, 0.114, 0.224);
 const muted = rgb(0.31, 0.37, 0.45);
@@ -105,7 +105,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const photo = draft.documents.find(document => document.category === "PASSPORT_PHOTO");
   if (photo && photo.contentType !== "application/pdf" && /^[a-f0-9-]{36}\.(jpg|png)$/.test(photo.storageKey)) {
     try {
-      const bytes = await readFile(join(storageRoot, id, photo.storageKey));
+      const bytes = await readStoredFile("private", `admissions/${id}/${photo.storageKey}`);
       const image = photo.contentType === "image/png" ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
       ensure(118);
       const photoY = y - 102;

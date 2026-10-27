@@ -7,6 +7,8 @@ prisma/dev.db
 prisma/dev.db-journal
 backups/
 private-uploads/
+storage/
+public/uploads/
 prisma/shadow.db
 coverage/
 playwright-report/

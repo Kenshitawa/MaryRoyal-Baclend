@@ -1,14 +1,12 @@
-import { unlink, readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { assertCanInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
+import { deleteStoredFile, readStoredFile } from "@/lib/file-storage";
 
 export const runtime = "nodejs";
-const root = join(process.cwd(), "private-uploads", "admissions");
-const safePath = (draftId: string, key: string) => /^[a-f0-9-]{36}\.(jpg|png|pdf)$/.test(key) ? join(root, draftId, key) : null;
+const safeKey = (draftId: string, key: string) => /^[a-f0-9-]{36}\.(jpg|png|pdf)$/.test(key) ? `admissions/${draftId}/${key}` : null;
 async function getAccess(id: string) {
   const token = (await cookies()).get("mary_session")?.value;
   const session = token ? await readSession(token) : null;
@@ -26,10 +24,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const access = await getAccess(id);
   if ("response" in access) return access.response;
   const document = await db.admissionDocument.findFirst({ where: { id: documentId, draftId: id } });
-  const path = document && safePath(id, document.storageKey);
-  if (!document || !path) return NextResponse.json({ error: "Admission document not found." }, { status: 404 });
+  const key = document && safeKey(id, document.storageKey);
+  if (!document || !key) return NextResponse.json({ error: "Admission document not found." }, { status: 404 });
   try {
-    const bytes = await readFile(path);
+    const bytes = await readStoredFile("private", key);
     await db.auditEvent.create({ data: { actorId: access.user.id, action: "ADMISSION_DOCUMENT_VIEWED", entity: "AdmissionDocument", entityId: document.id } });
     const disposition = new URL(request.url).searchParams.get("download") === "1" ? "attachment" : "inline";
     return new NextResponse(bytes, { headers: { "content-type": document.contentType, "content-disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(document.originalName)}`, "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
@@ -42,12 +40,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!access.user || !["DIRECTOR", "SECRETARY"].includes(access.user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (access.draft.status !== "DRAFT") return NextResponse.json({ error: "Submitted documents are retained with the admission record." }, { status: 409 });
   const document = await db.admissionDocument.findFirst({ where: { id: documentId, draftId: id } });
-  const path = document && safePath(id, document.storageKey);
-  if (!document || !path) return NextResponse.json({ error: "Admission document not found." }, { status: 404 });
+  const key = document && safeKey(id, document.storageKey);
+  if (!document || !key) return NextResponse.json({ error: "Admission document not found." }, { status: 404 });
   await db.$transaction(async tx => {
     await tx.admissionDocument.delete({ where: { id: document.id } });
     await tx.auditEvent.create({ data: { actorId: access.user!.id, action: "ADMISSION_DOCUMENT_REMOVED", entity: "AdmissionDocument", entityId: document.id } });
   });
-  await unlink(path).catch(() => undefined);
+  await deleteStoredFile("private", key).catch(() => undefined);
   return NextResponse.json({ success: true });
 }

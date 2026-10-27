@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readFile, rm } from "node:fs/promises";
+import { resolve, sep } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { PrismaClient } from "@prisma/client";
@@ -89,7 +89,12 @@ async function main() {
       ] });
       await tx.cbcLevel.createMany({ data: [...cbcDefaults] });
     });
-    console.log("Local school data cleared. The Director is reset to the documented first-login credentials; school identity and CBC defaults were restored.");
+    for (const relativeDir of ["private-uploads", "public/uploads"]) {
+      const directory = resolve(process.cwd(), relativeDir);
+      const workspaceRoot = `${resolve(process.cwd())}${sep}`;
+      if (directory.startsWith(workspaceRoot)) await rm(directory, { recursive: true, force: true });
+    }
+    console.log("Local school data and local uploads cleared. The Director is reset to the documented first-login credentials; school identity and CBC defaults were restored.");
   } finally { await db.$disconnect(); }
 }
 

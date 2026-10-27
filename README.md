@@ -78,6 +78,10 @@ Stop the app, preserve `prisma/dev.db`, and replace it with the selected file in
 
 This remains a local prototype, not a school-ready production system. Important incomplete modules and security limits are listed in [docs/ROADMAP.md](docs/ROADMAP.md). No deployment is performed.
 
+## Production deployment preparation
+
+The app now has a PostgreSQL schema/migration path, a one-time Director bootstrap, a database health endpoint, and private Supabase Storage support. Read [the production deployment guide](docs/DEPLOYMENT_GUIDE.md) before deploying. Choose one host for the **whole Next.js app** (Vercel or Render); it is not a separately deployable frontend and backend. `MaryRoyal-frontend` is being prepared as the complete app checkout for deployment; `MaryRoyal-Baclend` remains a backend source snapshot and must not be deployed separately. Production setup still requires your own Supabase project, secrets, private storage bucket and legal/privacy sign-off. The remaining app-security and workflow gaps in the roadmap mean this is not yet cleared for real learner data.
+
 ## Frontend/backend repository layout
 
-The application currently runs as one Next.js full-stack project. `frontend/README.md` and `backend/README.md` document the actual ownership of the source. Next.js requires its UI and API route handlers in the same App Router source tree, so the code is not duplicated into two stale copies. See `docs/DECISIONS.md` for the repository split decision.
+The application currently runs as one Next.js full-stack project. Next.js requires its UI and API route handlers in the same App Router source tree. The deployable copy therefore includes UI and server code in one repository; the separate backend repository is a source reference until a standalone service extraction is completed. See `docs/DECISIONS.md` for the repository split decision.

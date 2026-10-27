@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
+import { writeStoredFile } from "@/lib/file-storage";
 
 export const runtime = "nodejs";
 const imageTypes = ["image/png", "image/jpeg", "image/webp"] as const;
@@ -41,11 +40,9 @@ export async function POST(request: Request) {
   };
   if (!signatures[checked.data.type]) return NextResponse.json({ error: "The selected file does not match its image type." }, { status: 400 });
   const extension = checked.data.type === "image/jpeg" ? "jpg" : checked.data.type.slice("image/".length);
-  const directory = path.join(process.cwd(), "public", "uploads", "avatars");
-  await mkdir(directory, { recursive: true });
   const filename = `${randomUUID()}.${extension}`;
-  await writeFile(path.join(directory, filename), bytes, { flag: "wx" });
-  const avatarUrl = `/uploads/avatars/${filename}`;
+  const avatarUrl = `/api/profile/avatar/${user.id}/${filename}`;
+  await writeStoredFile("avatars", `${user.id}/${filename}`, bytes, checked.data.type);
   await db.$transaction([
     db.user.update({ where: { id: user.id }, data: { avatarUrl } }),
     db.auditEvent.create({ data: { actorId: user.id, action: "PROFILE_PHOTO_UPDATED", entity: "User", entityId: user.id } })

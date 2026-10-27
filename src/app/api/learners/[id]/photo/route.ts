@@ -1,10 +1,9 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { canInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
+import { readStoredFile } from "@/lib/file-storage";
 
 export const runtime = "nodejs";
 
@@ -39,7 +38,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const document = learner.admissionDraft.documents[0];
   if (!/^[a-f0-9-]{36}\.(jpg|png)$/.test(document.storageKey)) return NextResponse.json({ error: "Photo not found." }, { status: 404 });
   try {
-    const bytes = await readFile(join(process.cwd(), "private-uploads", "admissions", learner.admissionDraft.id, document.storageKey));
+    const bytes = await readStoredFile("private", `admissions/${learner.admissionDraft.id}/${document.storageKey}`);
     await db.auditEvent.create({ data: { actorId: user.id, action: "LEARNER_PHOTO_ACCESSED", entity: "AdmissionDocument", entityId: document.id } });
     return new NextResponse(bytes, { headers: { "content-type": document.contentType, "cache-control": "private, no-store", "x-content-type-options": "nosniff", "content-security-policy": "default-src 'none'; sandbox" } });
   } catch {
