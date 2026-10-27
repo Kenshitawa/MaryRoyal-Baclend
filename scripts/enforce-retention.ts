@@ -2,8 +2,10 @@ import { db } from "@/lib/db";
 import { deleteStoredFile } from "@/lib/file-storage";
 
 async function main() {
-  const daysValue = Number(process.env.ADMISSION_DRAFT_RETENTION_DAYS ?? 365);
-  if (!Number.isInteger(daysValue) || daysValue < 365 || daysValue > 3650) throw new Error("ADMISSION_DRAFT_RETENTION_DAYS must be an integer between 365 and 3650.");
+  const dbSetting = await db.schoolSetting.findUnique({ where: { key: "draft_retention_days" } });
+  const configuredDays = dbSetting ? parseInt(dbSetting.value, 10) : null;
+  const daysValue = Number(process.env.ADMISSION_DRAFT_RETENTION_DAYS ?? (configuredDays && configuredDays > 0 ? configuredDays : 365));
+  if (!Number.isInteger(daysValue) || daysValue < 1 || daysValue > 3650) throw new Error("ADMISSION_DRAFT_RETENTION_DAYS must be an integer between 1 and 3650.");
   const cutoff = new Date(Date.now() - daysValue * 24 * 60 * 60 * 1000);
   const expired = await db.admissionDraft.findMany({
     where: { status: "DRAFT", learnerId: null, updatedAt: { lt: cutoff } },

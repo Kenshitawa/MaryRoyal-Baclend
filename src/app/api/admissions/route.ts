@@ -24,8 +24,7 @@ export async function GET(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid admission filters." }, { status: 400 });
   const q = parsed.data.q;
   const where: Prisma.AdmissionDraftWhereInput = {
-    ...(user.role === "SECRETARY" ? { createdById: user.id } : {}),
-    ...(user.role === "HEAD_TEACHER" ? { status: { in: ["SUBMITTED", "ENROLLED"] } } : parsed.data.status ? { status: parsed.data.status } : {}),
+    ...(parsed.data.status ? { status: parsed.data.status } : {}),
     ...(q ? { OR: [{ admissionNo: { contains: q } }, { learner: { name: { contains: q } } }] } : {})
   };
   const admissions = await db.admissionDraft.findMany({ where, select: { id: true, admissionNo: true, currentStep: true, status: true, createdAt: true, updatedAt: true, submittedAt: true, createdBy: { select: { name: true } }, learner: { select: { id: true, name: true, grade: true, admissionStatus: true } }, documents: { select: { category: true } } }, orderBy: { updatedAt: "desc" }, take: parsed.data.take });

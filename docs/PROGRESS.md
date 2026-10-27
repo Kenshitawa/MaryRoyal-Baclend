@@ -321,3 +321,16 @@
   - npm run typecheck passed (0 errors).
   - npm test passed (7 test suites, 38/38 tests passing).
   - Prisma validation passed for SQLite and PostgreSQL.
+
+## Step 2 — Delete Admission Drafts — 2026-10-28
+- **Built:**
+  - Added DELETE handler in src/app/api/admissions/[id]/route.ts allowing Secretary, Head Teacher, and Director to permanently delete admission drafts (Secretary can delete any draft, not only their own).
+  - Enforced strict status protection: only records with status DRAFT can be deleted; SUBMITTED or ENROLLED admissions are protected from deletion and require explicit withdraw/archive.
+  - Implemented automatic file purge: deleting a draft automatically deletes all its uploaded private supporting files from storage via deleteStoredFile.
+  - Implemented bulk delete endpoint in src/app/api/admissions/bulk-delete/route.ts for deleting multiple drafts in one transactional operation.
+  - Added draft retention policy API in src/app/api/admissions/settings/route.ts and updated scripts/enforce-retention.ts to support configured database retention days with prior warning banner.
+  - Upgraded Admissions UI with AdmissionsClient featuring single draft delete, multi-select checkboxes with bulk delete, confirmation dialogs with irreversible warnings, success toasts, and retention policy modal.
+  - Added test suite tests/admissions-delete.test.ts verifying role authorization, status protection, and retention boundaries.
+- **Tested:**
+  - npm run typecheck passed (0 errors).
+  - npm test passed (8 test suites, 42/42 tests passing).

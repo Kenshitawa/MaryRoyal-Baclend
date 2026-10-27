@@ -2,23 +2,22 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
-  ArrowRight,
   ClipboardList,
   FilePlus2,
   Search,
   FileCheck2,
   Clock,
   CheckCircle2,
-  Filter
+  Filter,
 } from "lucide-react";
 import PortalFrame from "@/components/portal-frame";
 import { db } from "@/lib/db";
-import { canInScope } from "@/lib/permissions";
+import { can, canInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
-import { LearnerLink } from "@/components/learner-link";
+import { AdmissionsClient } from "./admissions-client";
 
 export default async function AdmissionsPage({
-  searchParams
+  searchParams,
 }: {
   searchParams: Promise<{ q?: string; status?: string }>;
 }) {
@@ -28,7 +27,7 @@ export default async function AdmissionsPage({
 
   const user = await db.user.findUnique({
     where: { id: session.id },
-    select: { id: true, role: true, suspended: true, forcePasswordChange: true }
+    select: { id: true, role: true, suspended: true, forcePasswordChange: true },
   });
   if (!user || user.suspended) redirect("/");
   if (user.forcePasswordChange) redirect("/change-password");
@@ -42,20 +41,15 @@ export default async function AdmissionsPage({
 
   const admissions = await db.admissionDraft.findMany({
     where: {
-      ...(user.role === "SECRETARY" ? { createdById: user.id } : {}),
-      ...(user.role === "HEAD_TEACHER"
-        ? { status: { in: ["SUBMITTED", "ENROLLED"] } }
-        : status
-        ? { status }
-        : {}),
+      ...(status ? { status } : {}),
       ...(q
         ? {
             OR: [
               { admissionNo: { contains: q } },
-              { learner: { name: { contains: q } } }
-            ]
+              { learner: { name: { contains: q } } },
+            ],
           }
-        : {})
+        : {}),
     },
     select: {
       id: true,
@@ -65,17 +59,29 @@ export default async function AdmissionsPage({
       updatedAt: true,
       submittedAt: true,
       learner: { select: { id: true, name: true, grade: true } },
-      documents: { select: { category: true } }
+      documents: { select: { category: true } },
     },
     orderBy: { updatedAt: "desc" },
-    take: 100
+    take: 100,
   });
 
   const canCreate = canInScope(user.role, "admissions", "create", "school");
+  const canDelete = can(user.role, "admissions", "delete");
+  const canConfigureRetention = user.role === "DIRECTOR" || user.role === "HEAD_TEACHER";
+
+  const retentionSetting = await db.schoolSetting.findUnique({
+    where: { key: "draft_retention_days" },
+  });
+  const retentionDays = retentionSetting ? parseInt(retentionSetting.value, 10) || 0 : 0;
+  const retentionNotice =
+    retentionDays > 0
+      ? `Notice: Inactive admission drafts untouched for more than ${retentionDays} days are scheduled for automatic purge.`
+      : null;
+
   const counts = {
     draft: admissions.filter((row) => row.status === "DRAFT").length,
     submitted: admissions.filter((row) => row.status === "SUBMITTED").length,
-    enrolled: admissions.filter((row) => row.status === "ENROLLED").length
+    enrolled: admissions.filter((row) => row.status === "ENROLLED").length,
   };
 
   return (
@@ -184,111 +190,14 @@ export default async function AdmissionsPage({
           </button>
         </form>
 
-        {/* Admissions Table List */}
-        <section className="bento-card overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="hidden grid-cols-[1.1fr_1.5fr_.8fr_.7fr_1fr] gap-4 border-b border-slate-100 bg-slate-50/80 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:grid dark:border-slate-800 dark:bg-slate-800/50">
-            <span>Admission</span>
-            <span>Learner</span>
-            <span>Documents</span>
-            <span>Updated</span>
-            <span>Status</span>
-          </div>
-
-          {admissions.length ? (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {admissions.map((record) => (
-                <div
-                  key={record.id}
-                  className="grid gap-2 px-4 py-4 transition hover:bg-blue-50/40 sm:grid-cols-[1.1fr_1.5fr_.8fr_.7fr_1fr] sm:items-center sm:gap-4 sm:px-5 dark:hover:bg-blue-950/20"
-                >
-                  <div>
-                    {record.learner ? (
-                      <LearnerLink id={record.learner.id} admissionNo={record.admissionNo} />
-                    ) : (
-                      <Link
-                        href={`/admissions/${record.id}`}
-                        className="font-mono text-xs font-bold text-blue-700 hover:underline dark:text-blue-400"
-                      >
-                        {record.admissionNo}
-                      </Link>
-                    )}
-                  </div>
-
-                  <div>
-                    {record.learner ? (
-                      <LearnerLink id={record.learner.id} name={record.learner.name} />
-                    ) : (
-                      <Link
-                        href={`/admissions/${record.id}`}
-                        className="text-xs font-bold text-slate-900 hover:underline dark:text-white"
-                      >
-                        Admission draft
-                      </Link>
-                    )}
-                    <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                      {record.learner?.grade ?? `Step ${record.currentStep} of 7`}
-                    </p>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    {record.documents.length} document{record.documents.length === 1 ? "" : "s"}
-                  </p>
-
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {new Intl.DateTimeFormat("en-KE", {
-                      dateStyle: "medium",
-                      timeZone: "Africa/Nairobi"
-                    }).format(record.updatedAt)}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${
-                        record.status === "DRAFT"
-                          ? "bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                          : record.status === "SUBMITTED"
-                          ? "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                          : "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                      }`}
-                    >
-                      {record.status}
-                    </span>
-
-                    <Link
-                      href={`/admissions/${record.id}`}
-                      className="inline-flex items-center text-xs font-semibold text-blue-700 hover:text-blue-800 dark:text-blue-400"
-                      aria-label={`Open admission ${record.admissionNo}`}
-                    >
-                      <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="px-6 py-14 text-center">
-              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                <ClipboardList size={26} />
-              </span>
-              <h2 className="mt-4 text-base font-bold text-slate-900 dark:text-white">
-                {q || status ? "No admissions match these filters" : "No admission records yet"}
-              </h2>
-              <p className="mx-auto mt-2 max-w-md text-xs text-slate-500 dark:text-slate-400">
-                {q || status
-                  ? "Try a different search term or clear the status filter."
-                  : "Start an admission draft with learner identity, guardian details, and school documents."}
-              </p>
-              {canCreate && !q && (
-                <Link
-                  href="/admissions/new"
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-700/20 hover:bg-blue-800"
-                >
-                  <FilePlus2 size={16} /> Start the first admission
-                </Link>
-              )}
-            </div>
-          )}
-        </section>
+        {/* Interactive Admissions Client Table & Actions */}
+        <AdmissionsClient
+          initialAdmissions={admissions}
+          canDelete={canDelete}
+          canConfigureRetention={canConfigureRetention}
+          retentionNotice={retentionNotice}
+          initialRetentionDays={retentionDays}
+        />
       </main>
     </PortalFrame>
   );
