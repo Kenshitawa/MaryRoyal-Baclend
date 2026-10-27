@@ -148,3 +148,12 @@
   - Updated `/reports` with live download buttons for both reports.
 - Tested: `npm run typecheck` passed (0 errors); `npm run lint` passed (0 errors); `npm test` passed (20/20 unit and permission tests). Local git tree clean.
 
+## User Role Upgrades & Executive Reporting Enhancement
+- Built:
+  - **Secretary Dashboard & Operations**: Removed schoolwide fee balances from Secretary dashboard; added payment intake capabilities (Cash, M-Pesa, Bank) directly linked to the finance ledger; added dedicated Secretary Complaints tab allowing complaints logging and viewing within assigned scope.
+  - **Teacher Weekly Teaching Log**: Converted daily teaching logs to weekly teaching summaries due every Friday latest 4:00 PM (EAT); added real-time countdown badge indicating days/hours left or deadline overdue status.
+  - **Universal Learner Profile View**: Streamlined learner profile viewing links across Director, Head Teacher, and staff tables so clicking any learner profile immediately loads the full learner profile view.
+  - **Leadership Navigation Refinement**: Removed Audit Log link from Head Teacher sidebar; removed redundant sidebar text label for Director while preserving the header security eye-icon shortcut directly linking to the audit log.
+  - **Director Executive Reports & Visual Charts**: Upgraded `/reports` into an executive intelligence hub with interactive visual analytics (Fee Collections & Arrears Aging term comparison bars, CBC Assessment 4-level competency descriptor breakdown [EE/ME/AE/BE], and Grade Enrollment population distribution) displayed side-by-side with live CSV export download panels.
+  - **Parent Fee Payment Instructions**: Integrated a comprehensive interactive "How to Pay School Fees" guide into the Parent Portal featuring step-by-step M-PESA Paybill (522123) instructions with one-click copy buttons for child admission numbers, KCB Bank account deposit details, and campus accounts office hours.
+- Tested: `npm run lint` passed (0 errors); `npm run typecheck` passed (0 errors); `npm test` passed (20/20 unit tests across domain, learner profiles, admissions, and permission matrix). Local git tree clean.

@@ -15,6 +15,7 @@ import {
   Trophy,
   Wallet,
 } from "lucide-react";
+import ParentFeePaymentGuide from "@/components/parent-fee-payment-guide";
 
 const kes = (n: number) =>
   new Intl.NumberFormat("en-KE", {
@@ -423,17 +424,24 @@ export default async function FamilyPortal({
 
         {/* Parent-Only Fee Statements Section */}
         {user.role === "PARENT" && (
-          <section className="glass dark:glass-dark rounded-3xl border border-slate-200/80 p-6 shadow-sm dark:border-slate-800/80">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-              <div>
-                <h2 className="text-base font-black text-slate-900 dark:text-white">
-                  Fee Statements &amp; Payment Receipts
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Official school invoices and issued payment receipts.
-                </p>
+          <div className="space-y-6">
+            <ParentFeePaymentGuide
+              learnerName={child.name}
+              admissionNo={child.admissionNo}
+              outstandingBalance={totalBalance}
+            />
+
+            <section className="glass dark:glass-dark rounded-3xl border border-slate-200/80 p-6 shadow-sm dark:border-slate-800/80">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+                <div>
+                  <h2 className="text-base font-black text-slate-900 dark:text-white">
+                    Fee Statements &amp; Payment Receipts
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Official school invoices and issued payment receipts for {child.name}.
+                  </p>
+                </div>
               </div>
-            </div>
 
             {invoices.length === 0 ? (
               <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
@@ -512,6 +520,7 @@ export default async function FamilyPortal({
               </div>
             )}
           </section>
+        </div>
         )}
 
         <footer className="py-6 text-center text-xs text-slate-400 dark:text-slate-500">

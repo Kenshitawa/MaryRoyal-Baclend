@@ -73,7 +73,10 @@ export default function ComplaintsClient({
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [search, setSearch] = useState("");
 
+  const [allLearners, setAllLearners] = useState<Child[]>([]);
   const isParent = role === "PARENT";
+  const isSecretary = role === "SECRETARY";
+  const canCompose = isParent || isSecretary;
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/complaints");
@@ -85,7 +88,11 @@ export default function ComplaintsClient({
 
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+    // Secretary needs to load all learners
+    if (isSecretary) {
+      fetch("/api/learners?take=100").then(r => r.ok ? r.json() : null).then(d => { if (d?.learners) setAllLearners(d.learners); }).catch(() => {});
+    }
+  }, [refresh, isSecretary]);
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
@@ -109,7 +116,7 @@ export default function ComplaintsClient({
       setSubject("");
       setCategory("OTHER");
       setShowCompose(false);
-      setNotice("Your concern was securely delivered to school leadership.");
+      setNotice(isSecretary ? "Complaint recorded and forwarded to school leadership." : "Your concern was securely delivered to school leadership.");
       await refresh();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Concern could not be submitted.");
@@ -205,13 +212,13 @@ export default function ComplaintsClient({
             </p>
           </div>
 
-          {isParent && (
+          {canCompose && (
             <button
               onClick={() => setShowCompose(!showCompose)}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-bold text-blue-900 shadow-md transition hover:bg-blue-50 active:scale-95"
             >
               <MessageSquare size={16} />
-              {showCompose ? "Close Form" : "Share a Concern"}
+              {showCompose ? "Close Form" : isSecretary ? "Log a Complaint" : "Share a Concern"}
             </button>
           )}
         </div>
@@ -295,7 +302,7 @@ export default function ComplaintsClient({
       )}
 
       {/* Compose Form (Expandable Bento) */}
-      {isParent && showCompose && (
+      {canCompose && showCompose && (
         <form
           onSubmit={create}
           className="glass dark:glass-dark mt-6 rounded-3xl border border-blue-200/70 p-6 shadow-md transition-all sm:p-7 dark:border-blue-900/60"
@@ -306,10 +313,10 @@ export default function ComplaintsClient({
             </span>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Share a Concern or Feedback
+                {isSecretary ? "Log a Complaint or Concern" : "Share a Concern or Feedback"}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Your message is sent directly and privately to school leadership.
+                {isSecretary ? "Log a complaint received from a parent or guardian. It will be routed to school leadership." : "Your message is sent directly and privately to school leadership."}
               </p>
             </div>
           </div>
@@ -326,7 +333,7 @@ export default function ComplaintsClient({
                 className="mt-1.5 min-h-11 w-full rounded-2xl border border-slate-200 bg-white/70 px-3 text-xs font-medium text-slate-900 shadow-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               >
                 <option value="">Choose learner…</option>
-                {learners.map((child) => (
+                {(isSecretary ? allLearners : learners).map((child) => (
                   <option key={child.id} value={child.id}>
                     {child.name} · {child.grade}
                   </option>

@@ -15,5 +15,5 @@ export default async function TeachingLogPage() {
   if (user.forcePasswordChange) redirect("/change-password");
   if (!canInScope(user.role, "teachingLogs", "view", user.role === "TEACHER" ? "assigned" : "school")) redirect("/dashboard");
   const assignments = user.role === "TEACHER" ? await db.teacherAssignment.findMany({ where: { teacherId: user.id }, select: { grade: true, subject: true }, orderBy: [{ grade: "asc" }, { subject: "asc" }] }) : [];
-  return <PortalFrame active="Daily teaching log"><TeachingLogClient role={user.role} assignments={assignments}/></PortalFrame>;
+  return <PortalFrame active="Weekly teaching log"><TeachingLogClient role={user.role} assignments={assignments}/></PortalFrame>;
 }

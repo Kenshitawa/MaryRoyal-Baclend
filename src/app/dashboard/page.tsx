@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Wallet,
   FileText,
-  ScrollText,
   ChevronRight,
   ClipboardCheck,
   CircleDollarSign,
@@ -24,8 +23,6 @@ import {
   MessageCircle,
   ArrowRight,
   TrendingUp,
-  CheckCircle2,
-  AlertCircle,
 } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
 import { DirectorGettingStartedChecklist } from "@/components/director-checklist";
@@ -60,6 +57,7 @@ const hrefs: Record<string, string> = {
   Assignments: "/assignments",
   "Learning content": "/learning-content",
   "Daily teaching log": "/teaching-log",
+  "Weekly teaching log": "/teaching-log",
   Complaints: "/complaints",
   Admissions: "/admissions",
 };
@@ -103,7 +101,6 @@ function MetricIcon({ name }: { name: string }) {
 }
 
 function MetricCard({ label, value, note, iconName, tone = "blue", index }: MetricItem & { index: number }) {
-  const palette = toneStyles[tone] ?? toneStyles.blue;
   const altTones = ["blue", "purple", "emerald", "amber"] as const;
   const auto = altTones[index % 4];
   const actualPalette = toneStyles[tone !== "blue" ? tone : auto] ?? toneStyles.blue;
@@ -323,8 +320,23 @@ export default async function Dashboard() {
       { label: "Attendance Today", value: String(attendance), note: "In your assigned grades", iconName: "calendar", tone: "emerald" },
       { label: "My Assignments", value: String(assignments.length), note: "Grade and subject pairs", iconName: "clipboard", tone: "purple" },
     ];
+  } else if (role === "SECRETARY") {
+    const [learnerCount, pendingAdmissions, completedAdmissions, complaintsCount, recentAdmissions] = await Promise.all([
+      db.learner.count({ where: { archivedAt: null, admissionStatus: "APPROVED" } }),
+      db.learner.count({ where: { archivedAt: null, admissionStatus: "PENDING" } }),
+      db.learner.count({ where: { archivedAt: null, admissionStatus: "APPROVED" } }),
+      db.complaint.count(),
+      db.learner.findMany({ where: { archivedAt: null }, orderBy: { admissionNo: "desc" }, take: 5, select: { name: true, grade: true, admissionStatus: true } }),
+    ]);
+    metrics = [
+      { label: "Enrolled Learners", value: String(learnerCount), note: "Active on school register", iconName: "users", tone: "blue" },
+      { label: "Pending Admission", value: String(pendingAdmissions), note: "Awaiting approval", iconName: "clock", tone: "amber" },
+      { label: "Admitted This Year", value: String(completedAdmissions), note: "Approved since Jan 1", iconName: "graduation", tone: "emerald" },
+      { label: "Complaints Logged", value: String(complaintsCount), note: "Total on record", iconName: "clipboard", tone: "purple" },
+    ];
+    void recentAdmissions; // available for future recent-activity panel
   } else {
-    // Accountant, Secretary
+    // Accountant only
     const invoices = await db.feeInvoice.findMany({
       include: {
         lines: true,
@@ -371,7 +383,7 @@ export default async function Dashboard() {
           { label: "Attendance", icon: CalendarCheck },
           { label: "Finance", icon: Wallet },
           { label: "Reports", icon: FileText },
-          { label: "Audit log", icon: ScrollText },
+          { label: "Complaints", icon: MessageCircle },
         ]
       : role === "HEAD_TEACHER"
       ? [
@@ -380,8 +392,7 @@ export default async function Dashboard() {
           { label: "Assessments", icon: BookOpen },
           { label: "Attendance", icon: CalendarCheck },
           { label: "Finance", icon: Wallet },
-          { label: "Audit log", icon: ScrollText },
-          { label: "Daily teaching log", icon: ClipboardList },
+          { label: "Weekly teaching log", icon: ClipboardList },
           { label: "Complaints", icon: MessageCircle },
         ]
       : role === "DEPUTY"
@@ -397,6 +408,7 @@ export default async function Dashboard() {
           { label: "Learners", icon: Users },
           { label: "Admissions", icon: ClipboardList },
           { label: "Finance", icon: Wallet },
+          { label: "Complaints", icon: MessageCircle },
         ]
       : role === "ACCOUNTANT"
       ? [
@@ -411,7 +423,7 @@ export default async function Dashboard() {
           { label: "Learners", icon: Users },
           { label: "Assignments", icon: ClipboardList },
           { label: "Learning content", icon: BookOpen },
-          { label: "Daily teaching log", icon: FileText },
+          { label: "Weekly teaching log", icon: FileText },
         ];
 
   // Hide attendance nav for teacher without class assignment

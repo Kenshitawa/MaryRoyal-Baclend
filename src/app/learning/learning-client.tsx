@@ -513,7 +513,7 @@ export default function LearningClient({
           {attempts.length > 0 && (
             <div className="mt-6 border-t border-slate-100 pt-4 dark:border-slate-800">
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Recent Quiz Attempts
+                Recent best scores
               </p>
               <div className="mt-2 space-y-1.5">
                 {attempts.slice(0, 3).map((item) => (

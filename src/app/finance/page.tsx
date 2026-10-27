@@ -47,7 +47,7 @@ export default async function FinancePage() {
 
       <FinanceClient
         canInvoice={user.role === "ACCOUNTANT" || user.role === "DIRECTOR"}
-        canPay={user.role === "ACCOUNTANT"}
+        canPay={user.role === "ACCOUNTANT" || user.role === "SECRETARY" || user.role === "HEAD_TEACHER" || user.role === "DIRECTOR"}
         canApprove={user.role === "HEAD_TEACHER" || user.role === "DIRECTOR"}
         canVoid={user.role === "ACCOUNTANT" || user.role === "DIRECTOR"}
       />

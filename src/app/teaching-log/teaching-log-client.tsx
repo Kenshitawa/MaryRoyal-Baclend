@@ -48,6 +48,21 @@ export default function TeachingLogClient({
     [assignments, grade]
   );
 
+  // Friday 4pm deadline logic
+  const fridayDeadline = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun, 1=Mon, ... 5=Fri, 6=Sat
+    const daysUntilFriday = day <= 5 ? 5 - day : 6; // next Friday
+    const deadline = new Date(now);
+    deadline.setDate(now.getDate() + daysUntilFriday);
+    deadline.setHours(16, 0, 0, 0);
+    const msLeft = deadline.getTime() - now.getTime();
+    const hoursLeft = Math.max(0, Math.floor(msLeft / 3600000));
+    const daysLeft = Math.floor(hoursLeft / 24);
+    const isPastDeadline = msLeft < 0;
+    return { daysLeft, hoursLeft: hoursLeft % 24, isPastDeadline, fridayDate: deadline };
+  }, []);
+
   const refresh = useCallback(async () => {
     const response = await fetch("/api/teaching-logs");
     if (response.ok) {
@@ -75,7 +90,7 @@ export default function TeachingLogClient({
       setTopics("");
       setReflection("");
       setShowAdd(false);
-      setMessage("Daily teaching summary logged for leadership review.");
+      setMessage("Weekly teaching summary logged for leadership review.");
       await refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Summary could not be submitted.");
@@ -132,13 +147,29 @@ export default function TeachingLogClient({
               CBC Classroom Reflective Practice
             </div>
             <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-              Daily Teaching Logs
+              Weekly Teaching Log
             </h1>
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-blue-100">
               {role === "TEACHER"
-                ? "Record daily topics, lesson competencies covered, and reflections for Head Teacher review."
-                : "Inspect curriculum coverage across classes and endorse daily educator logs."}
+                ? "Submit your weekly teaching summary by Friday 4:00 PM. Cover strands, competencies, and reflections for each class."
+                : "Inspect weekly curriculum coverage across classes and endorse educator logs."}
             </p>
+            {role === "TEACHER" && (
+              <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold backdrop-blur-sm border ${
+                fridayDeadline.isPastDeadline
+                  ? "border-red-400/40 bg-red-500/20 text-red-200"
+                  : fridayDeadline.daysLeft === 0
+                  ? "border-amber-400/40 bg-amber-500/20 text-amber-200"
+                  : "border-emerald-400/40 bg-emerald-500/20 text-emerald-200"
+              }`}>
+                <Clock size={11} />
+                {fridayDeadline.isPastDeadline
+                  ? "Deadline passed — submit ASAP"
+                  : fridayDeadline.daysLeft === 0
+                  ? `Due today (Friday 4 PM) · ${fridayDeadline.hoursLeft}h left`
+                  : `Deadline: Friday 4:00 PM · ${fridayDeadline.daysLeft}d ${fridayDeadline.hoursLeft}h left`}
+              </div>
+            )}
           </div>
 
           {role === "TEACHER" && (
@@ -147,7 +178,7 @@ export default function TeachingLogClient({
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-xs font-bold text-blue-950 shadow-md transition hover:bg-blue-50 active:scale-95"
             >
               <Plus size={15} />
-              {showAdd ? "Close Entry" : "Log Today's Lesson"}
+              {showAdd ? "Close Entry" : "Log This Week's Lesson"}
             </button>
           )}
         </div>
@@ -244,10 +275,10 @@ export default function TeachingLogClient({
             </span>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Log Today&apos;s Classroom Instruction
+                Log This Week&apos;s Classroom Instruction
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                End-of-day summary of strands and learning achievements.
+                Weekly summary of strands and learning achievements — due Friday 4:00 PM.
               </p>
             </div>
           </div>

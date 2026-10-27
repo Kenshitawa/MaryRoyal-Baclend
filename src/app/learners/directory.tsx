@@ -248,11 +248,11 @@ export default function LearnerDirectory({
 
         {canCreate && (
           <Link
-            href="/admissions"
+            href="/admissions/new"
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-700 px-5 text-xs font-bold text-white shadow-md shadow-blue-700/20 transition hover:brightness-110 active:scale-95"
           >
             <Plus size={15} />
-            Admit New Learner
+            + Full admission
           </Link>
         )}
       </div>
