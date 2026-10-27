@@ -7,6 +7,11 @@ import { ThemeProvider } from "@/components/design-system/theme-provider";
 export const metadata: Metadata = {
   title: "Mary Royal School | Hard work pays",
   description: "Mary Royal School · Nurturing Excellence Through CBE",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false, noimageindex: true, nosnippet: true }
+  },
   applicationName: "Mary Royal SMS",
   manifest: "/manifest.webmanifest",
   icons: { icon: "/mary-royal-logo.png" }
