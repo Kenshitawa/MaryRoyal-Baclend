@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canInScope, canViewStaffStatutory } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   const roleFilter = searchParams.get("role")?.trim();
   const statusFilter = searchParams.get("status")?.trim();
 
-  const where: any = {
+  const where: Prisma.UserWhereInput = {
     role: { notIn: [Role.PARENT, Role.LEARNER] },
   };
 

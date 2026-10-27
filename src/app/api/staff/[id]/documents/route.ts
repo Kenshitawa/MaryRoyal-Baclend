@@ -108,8 +108,8 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true, document: doc }, { status: 201 });
-  } catch (err: any) {
-    console.error("Staff doc upload error:", err);
+  } catch {
+    console.error("Staff document upload failed.");
     return NextResponse.json({ error: "Failed to store document." }, { status: 500 });
   }
 }

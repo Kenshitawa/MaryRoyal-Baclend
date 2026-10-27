@@ -65,8 +65,8 @@ export async function GET(
         "cache-control": "private, no-cache, no-store, must-revalidate",
       },
     });
-  } catch (err: any) {
-    console.error("Document read failed:", err);
+  } catch {
+    console.error("Staff document read failed.");
     return NextResponse.json({ error: "File not found or unreadable." }, { status: 404 });
   }
 }

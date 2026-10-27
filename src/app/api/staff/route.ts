@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { assertCanInScope, canManageStaffTarget, canViewStaffStatutory, canEditStaffStatutory } from "@/lib/permissions";
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
   const roleFilter = searchParams.get("role")?.trim();
   const statusFilter = searchParams.get("status")?.trim();
 
-  const where: any = {
+  const where: Prisma.UserWhereInput = {
     role: { notIn: [Role.PARENT, Role.LEARNER] },
   };
 
@@ -370,8 +370,8 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (err: any) {
-    console.error("Staff creation failed:", err);
+  } catch {
+    console.error("Staff creation failed.");
     return NextResponse.json(
       { error: "Could not create staff account. Please verify input data." },
       { status: 500 }

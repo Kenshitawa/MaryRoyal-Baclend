@@ -19,6 +19,25 @@ async function actor() {
   return user && !user.suspended && !user.forcePasswordChange ? user : null;
 }
 
+interface StaffImportRow {
+  rowNum: number;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  staffNumber: string;
+  tscNumber: string;
+  employmentTitle: string;
+  department: string;
+  employmentType: string;
+  nationalId: string;
+  kraPin: string;
+  nssfNumber: string;
+  shaNumber: string;
+  bankName: string;
+  bankAccountNumber: string;
+}
+
 function parseCSVLine(line: string): string[] {
   const values: string[] = [];
   let current = "";
@@ -64,8 +83,7 @@ export async function POST(request: Request) {
   }
 
   // Header row
-  const headerCols = parseCSVLine(lines[0]);
-  const parsedRows: any[] = [];
+  const parsedRows: StaffImportRow[] = [];
   const errors: { row: number; field: string; message: string }[] = [];
 
   const existingEmails = new Set(
@@ -79,8 +97,8 @@ export async function POST(request: Request) {
     if (cols.length < 3 || cols.every((c) => !c)) continue; // skip blank line
 
     const name = cols[0];
-    let roleStr = cols[1]?.toUpperCase().replace(/\s+/g, "_") || "TEACHER";
-    const email = cols[2]?.toLowerCase();
+    const roleStr = cols[1]?.toUpperCase().replace(/\s+/g, "_") || "TEACHER";
+    const email = cols[2]?.toLowerCase() || "";
     const phone = cols[3] || "";
     const staffNumber = cols[4] || "";
     const tscNumber = cols[5] || "";
@@ -158,7 +176,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const createdRecords: any[] = [];
+  const createdRecords: { name: string; email: string; role: string; temporaryPassword: string }[] = [];
   await db.$transaction(async (tx) => {
     for (const r of parsedRows) {
       const tempPass = randomBytes(12).toString("base64url");

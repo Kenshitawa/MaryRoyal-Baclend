@@ -338,3 +338,8 @@
 ## Step 3 -- Mobile Navigation 4 Tabs Plus More for Every Role -- 2026-10-28
 - Built: Unified permission-driven mobile navigation in src/lib/navigation.ts. Exactly 4 primary tabs per role (Director: Home/Learners/Finance/Staff; HeadTeacher: Home/Learners/Attendance/Complaints; Deputy: Home/Attendance/Exams/Timetable; Secretary: Home/Admissions/Learners/Fees; Accountant: Home/Invoices/Payments/Arrears; Teacher: Home/Attendance/Marks/My Classes; Parent: Home/Results/Fees/Messages; Learner: Home/Homework/Results/My Learning). Badge API /api/nav/badges for complaints/approvals/notifications. Mobile-nav component with 44px touch targets, keyboard and wizard awareness, swipeable More bottom sheet with search.
 - Tested: npm run typecheck passed; npm test passed 54/54 (9 suites). Commit 96d06e5.
+
+## Deployment build fix -- 2026-10-28
+- Replaced untyped staff API filters and payloads with Prisma and Zod schemas; removed database exception details from staff API logs.
+- Tightened the staff profile server query to select only fields needed by the page, preventing the password hash from being included in serialized user data.
+- Verified: npm run lint (0 errors; warnings remain), npm run typecheck, npm test (54/54), and npm run build:production all passed.

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import {
   User,
   Briefcase,
@@ -25,15 +24,71 @@ import {
   Building,
 } from "lucide-react";
 
+type DateLike = Date | string;
+
+interface StaffProfileInfo {
+  gender?: string | null;
+  dateOfBirth?: DateLike | null;
+  nationalId?: string | null;
+  nationality?: string | null;
+  maritalStatus?: string | null;
+  alternatePhone?: string | null;
+  residenceAddress?: string | null;
+  county?: string | null;
+  dateJoined?: DateLike | null;
+  employmentType?: string | null;
+  department?: string | null;
+  lineManager?: string | null;
+  probationEndDate?: DateLike | null;
+  educationHistory?: string | null;
+  professionalQualifications?: string | null;
+  certificates?: string | null;
+  specializations?: string | null;
+  yearsOfExperience?: number | null;
+  previousEmployers?: string | null;
+  kraPin?: string | null;
+  nssfNumber?: string | null;
+  shaNumber?: string | null;
+  bankName?: string | null;
+  bankAccountName?: string | null;
+  bankAccountNumber?: string | null;
+  bankBranch?: string | null;
+  emergencyContacts?: { id: string; fullName: string; relationship: string; phone: string; isNextOfKin: boolean }[];
+  referees?: { id: string; fullName: string; organization: string; title: string | null; phone: string; email: string | null }[];
+  documents?: { id: string; category: string; originalName: string; sizeBytes: number; createdAt: DateLike }[];
+  editHistory?: { id: string; field: string; oldValue: string | null; newValue: string | null; createdAt: DateLike; actor: { name: string; role: string } }[];
+}
+
+export interface StaffProfileClientData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  role: string;
+  suspended: boolean;
+  staffNumber: string | null;
+  tscNumber: string | null;
+  employmentTitle: string | null;
+  qualifications: string | null;
+  staffProfile: StaffProfileInfo | null;
+  assignments: { grade: string; subject: string }[];
+  classTeacherAssignments: { grade: string }[];
+}
+
 interface StaffProfileClientProps {
-  staff: any;
+  staff: StaffProfileClientData;
   actor: { id: string; role: string; name: string };
   canEdit: boolean;
   canViewStatutory: boolean;
   canEditStatutory: boolean;
-  payroll: any[];
-  teachingLogs: any[];
-  attendance: any[];
+  payroll: { period: string; status: string; netAmount: number }[];
+  teachingLogs: { topics: string; reflection: string | null; grade: string; subject: string; status: string; createdAt: DateLike }[];
+  attendance: { date: DateLike; status: string; checkInAt: DateLike | null; note: string | null }[];
+}
+
+function toDate(value: DateLike): Date {
+  return value instanceof Date ? value : new Date(value);
 }
 
 export function StaffProfileClient({
@@ -270,7 +325,7 @@ export function StaffProfileClient({
               <div className="flex justify-between py-2.5">
                 <span className="text-slate-500">Date of Birth</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {profile?.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString("en-KE") : "Not recorded"}
+                {profile?.dateOfBirth ? toDate(profile.dateOfBirth).toLocaleDateString("en-KE") : "Not recorded"}
                 </span>
               </div>
               <div className="flex justify-between py-2.5">
@@ -304,7 +359,7 @@ export function StaffProfileClient({
             </h3>
             {profile?.emergencyContacts && profile.emergencyContacts.length > 0 ? (
               <div className="mt-4 space-y-3">
-                {profile.emergencyContacts.map((contact: any) => (
+                {profile.emergencyContacts.map((contact) => (
                   <div
                     key={contact.id}
                     className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-xs dark:border-slate-800 dark:bg-slate-800/40"
@@ -334,7 +389,7 @@ export function StaffProfileClient({
             <h4 className="mt-6 text-xs font-bold text-slate-800 dark:text-slate-200">Referees</h4>
             {profile?.referees && profile.referees.length > 0 ? (
               <div className="mt-3 space-y-2">
-                {profile.referees.map((ref: any) => (
+                {profile.referees.map((ref) => (
                   <div key={ref.id} className="rounded-xl border border-slate-100 p-3 text-xs dark:border-slate-800">
                     <p className="font-bold text-slate-900 dark:text-white">{ref.fullName}</p>
                     <p className="text-slate-500 text-[11px]">{ref.title ? `${ref.title} · ` : ""}{ref.organization}</p>
@@ -384,7 +439,7 @@ export function StaffProfileClient({
               <div className="flex justify-between py-2">
                 <span className="text-slate-500">Date Joined Mary Royal</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {profile?.dateJoined ? new Date(profile.dateJoined).toLocaleDateString("en-KE") : "Recorded on file"}
+                  {profile?.dateJoined ? toDate(profile.dateJoined).toLocaleDateString("en-KE") : "Recorded on file"}
                 </span>
               </div>
               <div className="flex justify-between py-2">
@@ -394,7 +449,7 @@ export function StaffProfileClient({
               <div className="flex justify-between py-2">
                 <span className="text-slate-500">Probation Status</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {profile?.probationEndDate ? `Ends ${new Date(profile.probationEndDate).toLocaleDateString("en-KE")}` : "Confirmed Permanent"}
+                  {profile?.probationEndDate ? `Ends ${toDate(profile.probationEndDate).toLocaleDateString("en-KE")}` : "Confirmed Permanent"}
                 </span>
               </div>
             </div>
@@ -504,7 +559,7 @@ export function StaffProfileClient({
 
           <div className="mt-5 divide-y divide-slate-100 rounded-2xl border border-slate-100 dark:divide-slate-800 dark:border-slate-800">
             {profile?.documents && profile.documents.length > 0 ? (
-              profile.documents.map((doc: any) => (
+              profile.documents.map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between p-4 text-xs">
                   <div className="flex items-center gap-3">
                     <FileText size={18} className="text-blue-600 dark:text-blue-400 shrink-0" />
@@ -513,7 +568,7 @@ export function StaffProfileClient({
                       <p className="text-[11px] text-slate-500">
                         Category: <span className="font-semibold">{doc.category.replaceAll("_", " ")}</span> ·{" "}
                         {(doc.sizeBytes / 1024).toFixed(1)} KB ·{" "}
-                        {new Date(doc.createdAt).toLocaleDateString("en-KE")}
+                        {toDate(doc.createdAt).toLocaleDateString("en-KE")}
                       </p>
                     </div>
                   </div>
@@ -547,7 +602,7 @@ export function StaffProfileClient({
             <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 text-xs dark:border-blue-900 dark:bg-blue-950/40">
               <span className="font-bold text-blue-900 dark:text-blue-200">Designated Class Teacher For:</span>
               <div className="mt-2 flex flex-wrap gap-2">
-                {staff.classTeacherAssignments.map((cta: any) => (
+                {staff.classTeacherAssignments.map((cta) => (
                   <span
                     key={cta.grade}
                     className="rounded-lg bg-blue-700 px-3 py-1 text-xs font-bold text-white shadow-sm"
@@ -562,7 +617,7 @@ export function StaffProfileClient({
           <h4 className="mt-6 text-xs font-bold text-slate-800 dark:text-slate-200">Subject Allocations</h4>
           {staff.assignments && staff.assignments.length > 0 ? (
             <div className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-100 text-xs dark:divide-slate-800 dark:border-slate-800">
-              {staff.assignments.map((item: any) => (
+              {staff.assignments.map((item) => (
                 <div key={`${item.grade}-${item.subject}`} className="flex items-center justify-between p-3.5">
                   <span className="font-semibold text-slate-800 dark:text-slate-200">{item.subject}</span>
                   <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-bold text-slate-800 dark:bg-slate-800 dark:text-slate-200">
@@ -590,11 +645,11 @@ export function StaffProfileClient({
 
           {attendance.length > 0 ? (
             <div className="mt-4 divide-y divide-slate-100 text-xs dark:divide-slate-800">
-              {attendance.map((rec: any, idx: number) => (
+              {attendance.map((rec, idx) => (
                 <div key={idx} className="flex items-center justify-between py-2.5">
                   <span className="font-medium text-slate-700 dark:text-slate-300">
-                    {new Date(rec.date).toLocaleDateString("en-KE", { dateStyle: "medium" })}
-                    {rec.checkInAt ? ` · In at ${new Date(rec.checkInAt).toLocaleTimeString("en-KE", { timeStyle: "short" })}` : ""}
+                    {toDate(rec.date).toLocaleDateString("en-KE", { dateStyle: "medium" })}
+                    {rec.checkInAt ? ` · In at ${toDate(rec.checkInAt).toLocaleTimeString("en-KE", { timeStyle: "short" })}` : ""}
                   </span>
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
@@ -629,14 +684,14 @@ export function StaffProfileClient({
 
           {profile?.editHistory && profile.editHistory.length > 0 ? (
             <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-100 text-xs dark:divide-slate-800 dark:border-slate-800">
-              {profile.editHistory.map((h: any) => (
+              {profile.editHistory.map((h) => (
                 <div key={h.id} className="p-3.5 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-900 dark:text-white capitalize">
                       {h.field.replace(/([A-Z])/g, " $1")}
                     </span>
                     <span className="text-[11px] text-slate-400">
-                      {new Date(h.createdAt).toLocaleDateString("en-KE", { dateStyle: "medium", timeStyle: "short" })}
+                      {toDate(h.createdAt).toLocaleDateString("en-KE", { dateStyle: "medium", timeStyle: "short" })}
                     </span>
                   </div>
                   <p className="text-slate-500 text-[11px]">
@@ -728,7 +783,7 @@ export function StaffProfileClient({
               </h3>
               {payroll.length > 0 ? (
                 <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                  {payroll.map((entry: any) => (
+                  {payroll.map((entry) => (
                     <div key={entry.period} className="flex items-center justify-between py-3">
                       <div>
                         <span className="font-bold text-slate-900 dark:text-white">{entry.period}</span>

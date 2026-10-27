@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
 import { canInScope, canManageStaffTarget, canViewStaffStatutory, canEditStaffStatutory } from "@/lib/permissions";
 import { ArrowLeft } from "lucide-react";
-import { StaffProfileClient } from "./staff-profile-client";
+import { StaffProfileClient, type StaffProfileClientData } from "./staff-profile-client";
 
 export default async function StaffProfilePage({
   params,
@@ -35,7 +35,18 @@ export default async function StaffProfilePage({
 
   const staff = await db.user.findUnique({
     where: { id },
-    include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        avatarUrl: true,
+        role: true,
+        suspended: true,
+        staffNumber: true,
+        tscNumber: true,
+        employmentTitle: true,
+        qualifications: true,
       staffProfile: {
         include: {
           emergencyContacts: true,
@@ -123,7 +134,7 @@ export default async function StaffProfilePage({
   }
 
   // Strip restricted fields for unauthorized viewers
-  let sanitizedStaff = staff;
+  let sanitizedStaff: StaffProfileClientData = { ...staff, staffProfile: staff.staffProfile };
   if (!canSeeStatutory && staff.staffProfile) {
     const {
       kraPin,
@@ -137,7 +148,7 @@ export default async function StaffProfilePage({
     } = staff.staffProfile;
     sanitizedStaff = {
       ...staff,
-      staffProfile: safeProfile as any,
+      staffProfile: safeProfile,
     };
   }
 
@@ -162,7 +173,7 @@ export default async function StaffProfilePage({
           canEdit={canEdit}
           canViewStatutory={canSeeStatutory}
           canEditStatutory={canEditStat}
-          payroll={payroll}
+          payroll={payroll.map((entry) => ({ ...entry, netAmount: Number(entry.netAmount) }))}
           teachingLogs={teachingLogs}
           attendance={attendance}
         />

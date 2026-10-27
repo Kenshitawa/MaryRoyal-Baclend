@@ -1,9 +1,50 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { canInScope, canManageStaffTarget, canDeleteStaffAccount, canViewStaffStatutory, canEditStaffStatutory } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
+import { staffEmergencyContactSchema, staffRefereeSchema } from "@/lib/staff-validation";
+
+const dateInput = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable();
+const textInput = (max = 250) => z.string().trim().max(max).optional().nullable();
+const staffUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(120).optional(),
+  phone: textInput(20),
+  staffNumber: textInput(40),
+  tscNumber: textInput(40),
+  employmentTitle: textInput(100),
+  avatarUrl: z.string().max(2048).optional().nullable(),
+  gender: z.enum(["Male", "Female", "Other"]).optional().nullable(),
+  nationalId: textInput(30),
+  nationality: textInput(60),
+  maritalStatus: z.enum(["Single", "Married", "Divorced", "Widowed", "Other"]).optional().nullable(),
+  alternatePhone: textInput(20),
+  residenceAddress: textInput(250),
+  county: textInput(60),
+  employmentType: z.enum(["Permanent", "Contract", "BOM", "Part-Time", "Probation"]).optional().nullable(),
+  department: textInput(100),
+  lineManager: textInput(100),
+  educationHistory: textInput(2000),
+  professionalQualifications: textInput(1000),
+  certificates: textInput(1000),
+  specializations: textInput(500),
+  yearsOfExperience: z.coerce.number().min(0).max(60).optional().nullable(),
+  previousEmployers: textInput(1000),
+  dateOfBirth: dateInput,
+  dateJoined: dateInput,
+  probationEndDate: dateInput,
+  kraPin: textInput(20),
+  nssfNumber: textInput(30),
+  shaNumber: textInput(30),
+  bankName: textInput(100),
+  bankAccountName: textInput(120),
+  bankAccountNumber: textInput(50),
+  bankBranch: textInput(100),
+  emergencyContacts: z.array(staffEmergencyContactSchema).max(10).optional(),
+  referees: z.array(staffRefereeSchema).max(5).optional(),
+}).strict();
 
 async function actor() {
   const token = (await cookies()).get("mary_session")?.value;
@@ -101,8 +142,8 @@ export async function GET(
   }
 
   // Strip restricted statutory fields if not permitted
-  let responseProfile = staff.staffProfile;
-  if (responseProfile && !canSeeStatutory) {
+  const responseStaff = staff.staffProfile && !canSeeStatutory
+    ? (() => {
     const {
       kraPin,
       nssfNumber,
@@ -112,14 +153,14 @@ export async function GET(
       bankAccountNumber,
       bankBranch,
       ...safeProfile
-    } = responseProfile;
-    responseProfile = safeProfile as any;
-  }
+    } = staff.staffProfile;
+    return { ...staff, staffProfile: safeProfile };
+  })()
+    : staff;
 
   return NextResponse.json({
     staff: {
-      ...staff,
-      staffProfile: responseProfile,
+      ...responseStaff,
       canEdit: canManageStaffTarget(user.role, staff.role),
       canDelete: canDeleteStaffAccount(user.role),
       canViewStatutory: canSeeStatutory,
@@ -156,12 +197,18 @@ export async function PATCH(
     );
   }
 
-  let body: any;
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON request." }, { status: 400 });
   }
+
+  const parsedBody = staffUpdateSchema.safeParse(rawBody);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: "Invalid staff profile data." }, { status: 400 });
+  }
+  const body = parsedBody.data;
 
   const canEditStat = canEditStaffStatutory(user.role, staff.role);
 
@@ -171,7 +218,7 @@ export async function PATCH(
       const changes: { field: string; oldVal: string | null; newVal: string | null }[] = [];
 
       // Update User table fields if provided
-      const userUpdates: any = {};
+      const userUpdates: Prisma.UserUpdateInput = {};
       if (body.name && body.name !== staff.name) {
         changes.push({ field: "name", oldVal: staff.name, newVal: body.name });
         userUpdates.name = body.name;
@@ -205,34 +252,40 @@ export async function PATCH(
 
       // Upsert StaffProfile fields
       const currentProfile = staff.staffProfile;
-      const profileUpdates: any = {};
+      const profileUpdates: Prisma.StaffProfileUncheckedUpdateInput = {};
+      const profileCreate: Prisma.StaffProfileUncheckedCreateInput = { userId: id };
 
       const profileFields = [
         "gender", "nationalId", "nationality", "maritalStatus", "alternatePhone",
         "residenceAddress", "county", "employmentType", "department", "lineManager",
         "educationHistory", "professionalQualifications", "certificates", "specializations",
         "yearsOfExperience", "previousEmployers"
-      ];
+      ] as const;
 
       for (const field of profileFields) {
         if (body[field] !== undefined) {
-          const oldV = currentProfile ? (currentProfile as any)[field] : null;
+          const oldV = currentProfile?.[field] ?? null;
           const newV = body[field];
           if (String(oldV ?? "") !== String(newV ?? "")) {
             changes.push({ field, oldVal: oldV ? String(oldV) : null, newVal: newV ? String(newV) : null });
-            profileUpdates[field] = newV || null;
+            const value = newV || null;
+            Object.assign(profileUpdates, { [field]: value });
+            Object.assign(profileCreate, { [field]: value });
           }
         }
       }
 
       if (body.dateOfBirth !== undefined) {
         profileUpdates.dateOfBirth = body.dateOfBirth ? new Date(body.dateOfBirth) : null;
+        profileCreate.dateOfBirth = profileUpdates.dateOfBirth;
       }
       if (body.dateJoined !== undefined) {
         profileUpdates.dateJoined = body.dateJoined ? new Date(body.dateJoined) : null;
+        profileCreate.dateJoined = profileUpdates.dateJoined;
       }
       if (body.probationEndDate !== undefined) {
         profileUpdates.probationEndDate = body.probationEndDate ? new Date(body.probationEndDate) : null;
+        profileCreate.probationEndDate = profileUpdates.probationEndDate;
       }
 
       // Statutory fields (only if allowed to edit)
@@ -240,15 +293,17 @@ export async function PATCH(
         const statutoryFields = [
           "kraPin", "nssfNumber", "shaNumber", "bankName",
           "bankAccountName", "bankAccountNumber", "bankBranch"
-        ];
+        ] as const;
         let statEdited = false;
         for (const sf of statutoryFields) {
           if (body[sf] !== undefined) {
-            const oldV = currentProfile ? (currentProfile as any)[sf] : null;
+            const oldV = currentProfile?.[sf] ?? null;
             const newV = body[sf];
             if (String(oldV ?? "") !== String(newV ?? "")) {
               changes.push({ field: sf, oldVal: oldV ? String(oldV) : null, newVal: newV ? String(newV) : null });
-              profileUpdates[sf] = newV || null;
+              const value = newV || null;
+              Object.assign(profileUpdates, { [sf]: value });
+              Object.assign(profileCreate, { [sf]: value });
               statEdited = true;
             }
           }
@@ -267,10 +322,7 @@ export async function PATCH(
 
       const updatedProfile = await tx.staffProfile.upsert({
         where: { userId: id },
-        create: {
-          userId: id,
-          ...profileUpdates,
-        },
+        create: profileCreate,
         update: profileUpdates,
       });
 
@@ -335,8 +387,8 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, message: "Staff profile updated successfully." });
-  } catch (err: any) {
-    console.error("Staff update error:", err);
+  } catch {
+    console.error("Staff profile update failed.");
     return NextResponse.json({ error: "Failed to update staff profile." }, { status: 500 });
   }
 }
@@ -386,8 +438,8 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true, message: "Staff account deleted successfully." });
-  } catch (err: any) {
-    console.error("Staff delete error:", err);
+  } catch {
+    console.error("Staff account deletion failed.");
     return NextResponse.json({ error: "Failed to delete staff account." }, { status: 500 });
   }
 }

@@ -66,7 +66,7 @@ export function StaffDirectoryClient({
     validCount: number;
     totalCount: number;
     errors: { row: number; field: string; message: string }[];
-    preview: any[];
+    preview: Record<string, string | number | null>[];
   } | null>(null);
   const [importResult, setImportResult] = useState<{
     count: number;
