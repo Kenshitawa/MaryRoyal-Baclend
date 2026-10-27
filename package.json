@@ -11,6 +11,7 @@
     "build": "prisma generate && next build",
     "build:production": "prisma generate --schema prisma/postgresql/schema.prisma && next build",
     "db:migrate:production": "prisma migrate deploy --schema prisma/postgresql/schema.prisma",
+    "security:check-supabase": "prisma generate --schema prisma/postgresql/schema.prisma && tsx scripts/check-supabase-security.ts",
     "bootstrap:director": "tsx scripts/bootstrap-director.ts",
     "start": "next start",
     "lint": "eslint .",

@@ -245,3 +245,10 @@
 - **Tested:** `npm run seed:demo` completed; isolated `npx playwright test -g 'breadcrumbs, safe back' --reporter=line` passed (1/1, 3.1 minutes). Full suite with the new budget is pending.
 - **Known issues:** The remaining production/security/data-readiness items in `docs/ROADMAP.md` still block real student data. No cloud service has been configured or migrated.
 - **Next:** Rerun full unit, E2E and permission suites, then implement and document database hardening and operational safeguards that can be verified without live credentials.
+
+## PostgreSQL public API lockdown — 2026-10-27
+
+- **Built:** Added a PostgreSQL migration to enable RLS on current public tables, revoke public/anon/authenticated schema and table access, and deny those roles future default table/sequence grants. Added `npm run security:check-supabase` to verify database grants/RLS plus publishable-key REST read denial for each table. Updated the deployment steps and started a candid code-review matrix in `docs/SECURITY_REVIEW.md`.
+- **Tested:** `npm run typecheck` passed; `npm test` passed (24 tests); `npm run lint` completed with 0 errors and 39 existing warnings; PostgreSQL Prisma schema validation passed. No live Supabase credentials were available, so migration application and API denial are not verified against the project.
+- **Known issues:** Runtime Prisma uses the privileged server database connection and therefore bypasses RLS; per-request RBAC remains essential. The bootstrap still lacks a separate token, exhaustive IDOR coverage is absent, and the published Supabase project's current grants remain unknown until migration and check are run.
+- **Next:** Add a bootstrap token, encrypted PostgreSQL backup/restore scripts, environment validation, then privacy tools and go-live owner checklist. Hosted migration/restore cannot be honestly marked complete without owner-configured credentials and a second database.
