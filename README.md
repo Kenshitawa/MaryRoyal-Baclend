@@ -77,3 +77,7 @@ Stop the app, preserve `prisma/dev.db`, and replace it with the selected file in
 ## Current status
 
 This remains a local prototype, not a school-ready production system. Important incomplete modules and security limits are listed in [docs/ROADMAP.md](docs/ROADMAP.md). No deployment is performed.
+
+## Frontend/backend repository layout
+
+The application currently runs as one Next.js full-stack project. `frontend/README.md` and `backend/README.md` document the actual ownership of the source. Next.js requires its UI and API route handlers in the same App Router source tree, so the code is not duplicated into two stale copies. See `docs/DECISIONS.md` for the repository split decision.

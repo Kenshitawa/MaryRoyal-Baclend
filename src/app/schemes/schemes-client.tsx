@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { LayoutList, Plus, CheckCircle2, XCircle, Filter, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { LayoutList, Plus, CheckCircle2, XCircle, Filter, X, Loader2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 
 type Teaching = { grade: string; subject: string };
 type Scheme = {
@@ -55,6 +55,7 @@ export default function SchemesClient({ role, teaching }: { role: string; userId
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterTerm, setFilterTerm] = useState("ALL");
+  const [aiBusy, setAiBusy] = useState(false);
 
   const [form, setForm] = useState({
     grade: teaching[0]?.grade ?? "",
@@ -84,6 +85,18 @@ export default function SchemesClient({ role, teaching }: { role: string; userId
   useEffect(() => { void load(); }, [load]);
 
   function notify(text: string, ok = true) { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); }
+
+  async function draftWithAI() {
+    setAiBusy(true);
+    try {
+      const response = await fetch("/api/ai/draft", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: "scheme", grade: form.grade, subject: form.subject, topic: form.strand || form.subStrand || form.learningOutcomes }) });
+      const result = await response.json();
+      if (!response.ok) { notify(result.error ?? "Draft unavailable", false); return; }
+      setForm((current) => ({ ...current, ...result.draft }));
+      notify("AI draft added. Review and edit it before submitting.");
+    } catch { notify("Could not reach the local AI service.", false); }
+    finally { setAiBusy(false); }
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -244,6 +257,7 @@ export default function SchemesClient({ role, teaching }: { role: string; userId
               <button onClick={() => setShowCreate(false)} className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={15}/></button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
+              <button type="button" onClick={() => void draftWithAI()} disabled={aiBusy || !form.grade || !form.subject || !(form.strand || form.subStrand || form.learningOutcomes)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-800 disabled:opacity-50 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300"><Sparkles size={15}/>{aiBusy ? "Drafting locally…" : "Draft with local AI"}</button>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Grade</label>

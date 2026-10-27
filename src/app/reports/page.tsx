@@ -24,7 +24,7 @@ export default async function ReportsPage() {
   if (user.forcePasswordChange) redirect("/change-password");
   if (!canInScope(user.role, "exports", "view", "school")) redirect("/dashboard");
 
-  const [learnersCount, gradeGroups, assessmentsCount, assessmentsList, invoicesList] =
+  const [learnersCount, gradeGroups, assessmentsCount, assessmentsList, invoicesList, welfareTrend] =
     await Promise.all([
       db.learner.count({ where: { archivedAt: null } }),
       db.learner.groupBy({
@@ -51,6 +51,7 @@ export default async function ReportsPage() {
         },
         take: 2000,
       }),
+      db.welfareContribution.groupBy({ by: ["year", "month"], _sum: { amount: true }, _count: { id: true }, orderBy: [{ year: "asc" }, { month: "asc" }], take: 12 }),
     ]);
 
   // Aggregate Finance Data
@@ -137,6 +138,13 @@ export default async function ReportsPage() {
     count: g._count.id,
     pct: learnersCount > 0 ? Math.round((g._count.id / learnersCount) * 100) : 0,
   }));
+  const bands = [
+    { name: "ECD", test: /^(PP|ECD)/i },
+    { name: "Lower Primary", test: /^(Grade\s*)?[1-3]$/i },
+    { name: "Upper Primary", test: /^(Grade\s*)?[4-6]$/i },
+    { name: "JSS", test: /^(Grade\s*)?[7-9]$/i },
+  ].map((band) => ({ name: band.name, learners: gradeGroups.filter((row) => band.test.test(row.grade.trim())).reduce((total, row) => total + row._count.id, 0) }));
+  const welfareMax = Math.max(...welfareTrend.map((row) => row._sum.amount ?? 0), 1);
 
   const totals = [
     {
@@ -217,6 +225,18 @@ export default async function ReportsPage() {
             byGrade: learnerGrades,
           }}
         />
+        <section className="grid gap-5 lg:grid-cols-2" aria-label="Additional school reports">
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Enrollment by learning stage</h2>
+            <p className="mt-1 text-xs text-slate-500">Current learners grouped using their configured grade labels.</p>
+            <div className="mt-5 space-y-4">{bands.map((band) => <div key={band.name}><div className="mb-1 flex justify-between text-sm"><span className="font-semibold text-slate-700 dark:text-slate-200">{band.name}</span><span className="font-bold text-blue-700 dark:text-blue-300">{band.learners}</span></div><div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className="h-full rounded-full bg-blue-600" style={{ width: `${learnersCount ? Math.max(2, band.learners / learnersCount * 100) : 0}%` }} /></div></div>)}</div>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Welfare contribution activity</h2>
+            <p className="mt-1 text-xs text-slate-500">Monthly contributions recorded by the staff welfare programme.</p>
+            {welfareTrend.length ? <div className="mt-5 flex h-36 items-end gap-2">{welfareTrend.map((row) => <div key={`${row.year}-${row.month}`} title={`${new Intl.DateTimeFormat("en", { month: "short" }).format(new Date(row.year, row.month - 1))} ${row.year}: KES ${(row._sum.amount ?? 0).toLocaleString()}`} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"><div className="w-full rounded-t-lg bg-blue-600/90" style={{ height: `${Math.max(4, (row._sum.amount ?? 0) / welfareMax * 100)}%` }} /><span className="text-[10px] text-slate-500">{new Intl.DateTimeFormat("en", { month: "short" }).format(new Date(row.year, row.month - 1))}</span></div>)}</div> : <p className="mt-6 rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">No welfare contributions are recorded yet.</p>}
+          </article>
+        </section>
       </main>
     </PortalFrame>
   );

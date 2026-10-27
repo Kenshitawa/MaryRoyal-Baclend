@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
-import { can } from "@/lib/permissions";
+import { canInScope } from "@/lib/permissions";
 import { createNotification } from "@/lib/notify";
 
 async function actor() {
@@ -28,6 +28,18 @@ export async function GET(request: Request) {
 
   // Admin/welfare chair/director can see all
   const isAdmin = ["DIRECTOR", "HEAD_TEACHER", "WELFARE_CHAIR"].includes(user.role);
+
+  // Members may see a privacy-preserving ranking, never other members' savings or contributions.
+  if (scope === "leaderboard") {
+    const totals = await db.welfareContribution.groupBy({ by: ["memberId"], _sum: { amount: true }, orderBy: { _sum: { amount: "desc" } }, take: 10 });
+    const ids = totals.map((item) => item.memberId);
+    const members = await db.welfareMember.findMany({ where: { id: { in: ids } }, select: { id: true, user: { select: { name: true, role: true } } } });
+    const byId = new Map(members.map((member) => [member.id, member]));
+    return NextResponse.json({ leaderboard: totals.flatMap((item, index) => {
+      const member = byId.get(item.memberId);
+      return member ? [{ rank: index + 1, name: member.user.name, role: member.user.role }] : [];
+    }) });
+  }
 
   if (scope === "overview" && isAdmin) {
     const members = await db.welfareMember.findMany({
@@ -101,14 +113,16 @@ const loanActionSchema = z.object({
 export async function POST(request: Request) {
   const user = await actor();
   if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
-  if (!can(user.role as never, "welfare", "create")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
-  const { _action, ...rest } = body as { _action?: string } & Record<string, unknown>;
+  const actionEnvelope = z.object({ _action: z.enum(["enroll", "contribution", "loan", "product"]) }).passthrough().safeParse(body);
+  if (!actionEnvelope.success) return NextResponse.json({ error: "Invalid action." }, { status: 400 });
+  const { _action, ...rest } = actionEnvelope.data;
 
   // Enroll a staff member
   if (_action === "enroll") {
+    if (!["DIRECTOR", "WELFARE_CHAIR"].includes(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const parsed = enrollSchema.safeParse(rest);
     if (!parsed.success) return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     const existing = await db.welfareMember.findUnique({ where: { userId: parsed.data.userId } });
@@ -120,6 +134,7 @@ export async function POST(request: Request) {
 
   // Record a contribution
   if (_action === "contribution") {
+    if (!["DIRECTOR", "WELFARE_CHAIR"].includes(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const parsed = contributionSchema.safeParse(rest);
     if (!parsed.success) return NextResponse.json({ error: "Invalid contribution data" }, { status: 400 });
     const member = await db.welfareMember.findUnique({ where: { id: parsed.data.memberId }, include: { user: true } });
@@ -142,10 +157,12 @@ export async function POST(request: Request) {
 
   // Apply for a loan or salary advance
   if (_action === "loan") {
+    if (!canInScope(user.role as never, "welfare", "apply", "self")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const parsed = loanSchema.safeParse(rest);
     if (!parsed.success) return NextResponse.json({ error: "Invalid loan data" }, { status: 400 });
     const member = await db.welfareMember.findUnique({ where: { id: parsed.data.memberId } });
     if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+    if (member.userId !== user.id && user.role !== "DIRECTOR") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     // Enforce salary advance max KES 3,000 and only after 15th
     if (parsed.data.type === "SALARY_ADVANCE") {
@@ -175,6 +192,7 @@ export async function POST(request: Request) {
 
   // Create a new welfare product
   if (_action === "product") {
+    if (!["DIRECTOR", "WELFARE_CHAIR"].includes(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const parsed = productSchema.safeParse(rest);
     if (!parsed.success) return NextResponse.json({ error: "Invalid product data" }, { status: 400 });
     const product = await db.welfareProduct.create({ data: { ...parsed.data, createdById: user.id } });

@@ -11,7 +11,7 @@ const resources = [
 ] as const;
 
 const actions = [
-  "view", "create", "update", "delete", "approve", "review", "release", "submit", "confirm", "verify"
+  "view", "create", "update", "delete", "approve", "review", "release", "submit", "confirm", "verify", "apply"
 ] as const;
 
 const grants: Record<Role, string[]> = {
@@ -28,7 +28,7 @@ const grants: Record<Role, string[]> = {
     "complaints:update", "examSessions:view", "examSessions:create", "examSessions:update", "examSessions:approve",
     "rubrics:view", "rubrics:create", "rubrics:update", "feeWaivers:view", "feeWaivers:approve",
     "textbooks:view", "schemesOfWork:view", "timetable:view", "welfare:view", "welfare:create", "welfare:update",
-    "welfare:approve", "notifications:view", "notifications:update"
+    "welfare:approve", "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.HEAD_TEACHER]: [
     "dashboard:view", "learners:view", "learners:update", "learners:approve", "staff:view", "staffAttendance:view",
@@ -41,7 +41,7 @@ const grants: Record<Role, string[]> = {
     "examSessions:approve", "rubrics:view", "rubrics:create", "rubrics:update", "feeWaivers:view",
     "textbooks:view", "textbooks:create", "textbooks:update", "schemesOfWork:view", "schemesOfWork:verify",
     "timetable:view", "timetable:create", "timetable:update", "timetable:verify", "welfare:view", "welfare:approve",
-    "notifications:view", "notifications:update"
+    "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.DEPUTY]: [
     "dashboard:view", "staff:view", "staffAttendance:view", "staffAttendance:create", "staffAttendance:update",
@@ -50,18 +50,18 @@ const grants: Record<Role, string[]> = {
     "learningVideos:create", "learningVideos:update", "examSessions:view", "examSessions:create", "examSessions:update",
     "rubrics:view", "rubrics:create", "rubrics:update",
     "textbooks:view", "textbooks:create", "textbooks:update", "schemesOfWork:view", "schemesOfWork:confirm",
-    "timetable:view", "timetable:create", "timetable:update", "welfare:view", "notifications:view", "notifications:update"
+    "timetable:view", "timetable:create", "timetable:update", "welfare:view", "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.SECRETARY]: [
     "dashboard:view", "staff:view", "staffAttendance:view", "learners:view", "learners:update", "admissions:view",
     "admissions:create", "admissions:update", "admissions:submit", "learnerAccounts:create", "finance:view",
-    "invoices:view", "payments:view", "payments:create", "feeStructures:view", "complaints:view", "complaints:create",
-    "welfare:view", "notifications:view", "notifications:update"
+    "invoices:view", "payments:view", "payments:create", "feeStructures:view",
+    "welfare:view", "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.ACCOUNTANT]: [
     "dashboard:view", "staff:view", "staffAttendance:view", "learners:view", "finance:view", "invoices:view",
     "invoices:create", "payments:view", "payments:create", "payments:update", "feeStructures:view", "feeWaivers:view",
-    "feeWaivers:create", "welfare:view", "notifications:view", "notifications:update"
+    "feeWaivers:create", "welfare:view", "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.TEACHER]: [
     "dashboard:view", "staff:view", "staffAttendance:view", "learners:view", "attendance:view", "attendance:create",
@@ -70,14 +70,14 @@ const grants: Record<Role, string[]> = {
     "assignments:view", "assignments:create", "assignments:update", "learning:view", "learning:create",
     "learningVideos:view", "learningVideos:create", "examSessions:view", "rubrics:view",
     "textbooks:view", "textbooks:confirm", "schemesOfWork:view", "schemesOfWork:create", "schemesOfWork:update",
-    "timetable:view", "welfare:view", "notifications:view", "notifications:update"
+    "timetable:view", "welfare:view", "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.WELFARE_CHAIR]: [
-    "dashboard:view", "staffAttendance:view", "welfare:view", "welfare:create", "welfare:update",
+    "dashboard:view", "staffAttendance:view", "welfare:view", "welfare:create", "welfare:update", "welfare:apply",
     "notifications:view", "notifications:update"
   ],
   [Role.NON_TEACHING_STAFF]: [
-    "dashboard:view", "staffAttendance:view", "welfare:view", "notifications:view", "notifications:update"
+    "dashboard:view", "staffAttendance:view", "welfare:view", "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.PARENT]: [
     "dashboard:view", "learners:view", "attendance:view", "assessments:view", "discipline:view", "finance:view",
@@ -146,11 +146,11 @@ describe("permission matrix", () => {
     expect(can(Role.DIRECTOR, "payroll", "approve")).toBe(true);
   });
 
-  it("limits complaints to parents, secretary and school leadership", () => {
+  it("limits complaints to parents and school leadership", () => {
     expect(canInScope(Role.PARENT, "complaints", "create", "self")).toBe(true);
     expect(canInScope(Role.PARENT, "complaints", "view", "self")).toBe(true);
-    expect(canInScope(Role.SECRETARY, "complaints", "create", "self")).toBe(true);
-    expect(canInScope(Role.SECRETARY, "complaints", "view", "self")).toBe(true);
+    expect(canInScope(Role.SECRETARY, "complaints", "create", "self")).toBe(false);
+    expect(canInScope(Role.SECRETARY, "complaints", "view", "self")).toBe(false);
     expect(canInScope(Role.DIRECTOR, "complaints", "update", "school")).toBe(true);
     expect(canInScope(Role.HEAD_TEACHER, "complaints", "update", "school")).toBe(true);
     for (const role of [Role.DEPUTY, Role.ACCOUNTANT, Role.TEACHER, Role.LEARNER]) {
@@ -206,6 +206,9 @@ describe("permission matrix", () => {
     expect(can(Role.WELFARE_CHAIR, "welfare", "create")).toBe(true);
     expect(can(Role.DIRECTOR, "welfare", "create")).toBe(true);
     expect(can(Role.TEACHER, "welfare", "create")).toBe(false);
+    expect(can(Role.TEACHER, "welfare", "apply")).toBe(true);
+    expect(canInScope(Role.TEACHER, "welfare", "apply", "self")).toBe(true);
+    expect(canInScope(Role.TEACHER, "welfare", "apply", "school")).toBe(false);
     expect(can(Role.HEAD_TEACHER, "welfare", "approve")).toBe(true);
     expect(can(Role.DIRECTOR, "welfare", "approve")).toBe(true);
     expect(can(Role.WELFARE_CHAIR, "welfare", "approve")).toBe(false);

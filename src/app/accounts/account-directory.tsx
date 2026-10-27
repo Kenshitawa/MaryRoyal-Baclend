@@ -359,11 +359,12 @@ export default function AccountDirectory() {
           <form onSubmit={create} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <label htmlFor="account-name" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Full Name <span className="text-blue-600">*</span>
                 </label>
                 <input
                   required
+                  id="account-name"
                   name="name"
                   maxLength={120}
                   placeholder="e.g. Jane Achieng"
@@ -372,11 +373,12 @@ export default function AccountDirectory() {
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <label htmlFor="account-email" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Email Address <span className="text-blue-600">*</span>
                 </label>
                 <input
                   required
+                  id="account-email"
                   type="email"
                   name="email"
                   placeholder="name@maryroyal.ac.ke"
@@ -385,10 +387,11 @@ export default function AccountDirectory() {
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <label htmlFor="account-role" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Assigned Role <span className="text-blue-600">*</span>
                 </label>
                 <select
+                  id="account-role"
                   name="role"
                   className="mt-1.5 min-h-11 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 text-sm text-slate-900 shadow-sm transition outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-900/80 dark:text-white"
                 >

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @source "../";
+/* Make Tailwind's dark:* utilities follow the saved in-app preference, not the OS setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
   color-scheme: light;
@@ -8,15 +10,20 @@
   --page: #f5f7fc;
   --surface: #ffffff;
   --line: #e7ecf5;
+  --text-primary: #10233f;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
 }
 
 * { box-sizing: border-box; }
-html { min-height: 100%; background: var(--page); scroll-behavior: smooth; }
+html { min-height: 100%; background: var(--page-bg, var(--page)); scroll-behavior: smooth; }
 body {
   min-height: 100vh;
   margin: 0;
-  background: var(--page);
-  color: var(--navy);
+  overflow-x: clip;
+  background-color: var(--page);
+  background-image: var(--page-bg, none);
+  color: var(--text-primary, var(--navy));
   font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
@@ -39,6 +46,9 @@ html:not([data-theme="dark"]) {
   --surface: #ffffff;
   --line: #e7ecf5;
   --navy: #10233f;
+  --text-primary: #10233f;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
 }
 
 /* Ensure ALL inputs and search bars in Light Mode type in crisp dark font */
@@ -59,6 +69,12 @@ html:not([data-theme="dark"]) textarea::placeholder {
   color: #64748b !important;
 }
 
+/* Keep quiet helper labels readable on pale cards in light mode (WCAG AA targets). */
+html[data-theme="light"] .text-slate-400,
+html:not([data-theme="dark"]) .text-slate-400 { color: var(--text-muted) !important; }
+html[data-theme="light"] .text-slate-500,
+html:not([data-theme="dark"]) .text-slate-500 { color: var(--text-secondary) !important; }
+
 html[data-theme="light"] input.dark\:text-white,
 html:not([data-theme="dark"]) input.dark\:text-white {
   color: #0f172a !important;
@@ -71,6 +87,9 @@ html[data-theme="dark"] {
   --surface: #111d32;
   --line: #263650;
   --navy: #e5edf9;
+  --text-primary: #e5edf9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
   background: var(--page);
   color: #e5edf9;
 }

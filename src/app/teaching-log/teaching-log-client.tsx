@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Users,
+  Sparkles,
 } from "lucide-react";
 
 type Assignment = { grade: string; subject: string };
@@ -41,6 +42,7 @@ export default function TeachingLogClient({
   const [showAdd, setShowAdd] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
 
   const grades = useMemo(() => [...new Set(assignments.map((item) => item.grade))], [assignments]);
   const subjects = useMemo(
@@ -97,6 +99,19 @@ export default function TeachingLogClient({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function draftWeekly() {
+    setAiBusy(true);
+    try {
+      const response = await fetch("/api/ai/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "weekly", grade, subject, topic: topics }) });
+      const data = await response.json();
+      if (!response.ok) { setMessage(data.error ?? "Local draft unavailable."); return; }
+      setTopics(data.draft.topics);
+      setReflection(data.draft.reflection);
+      setMessage("AI draft added. Verify it reflects what you actually taught before submission.");
+    } catch { setMessage("Could not reach the local AI service."); }
+    finally { setAiBusy(false); }
   }
 
   async function confirm(log: Log) {
@@ -335,6 +350,7 @@ export default function TeachingLogClient({
                 placeholder="Detail the sub-strands, student activities, or practical assignments conducted…"
                 className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white/70 p-4 text-xs font-medium text-slate-900 outline-none focus:border-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
+              <button type="button" onClick={() => void draftWeekly()} disabled={aiBusy || topics.trim().length < 2} className="mt-2 inline-flex min-h-10 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-bold text-blue-800 disabled:opacity-50 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300"><Sparkles size={14}/>{aiBusy ? "Drafting locally…" : "Help draft with local AI"}</button>
             </div>
 
             <div className="sm:col-span-2">

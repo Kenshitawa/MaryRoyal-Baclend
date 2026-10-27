@@ -46,7 +46,7 @@ export function DirectorGettingStartedChecklist({
       id: "s2",
       step: 2,
       title: "Create Staff Accounts",
-      description: "Provision accounts for Head Teacher, Deputy, Secretary, Accountant, and Teachers.",
+      description: "Provision accounts for Head Teacher, Deputy, Secretary, and Teachers.",
       href: "/accounts",
       actionText: "Manage staff accounts",
       completed: stats.staffCount > 1,
@@ -96,16 +96,17 @@ export function DirectorGettingStartedChecklist({
       id: "s7",
       step: 7,
       title: "Record Fee Collections",
-      description: "Accountant issues term invoices and records M-Pesa, Cash, or Bank receipts.",
+      description: "The finance team issues term invoices and records M-Pesa, Cash, or Bank receipts.",
       href: "/finance",
       actionText: "Open finance desk",
       completed: stats.paymentsCount > 0,
-      role: "Accountant"
+      role: "Finance team"
     }
   ];
 
   const completedCount = steps.filter(s => s.completed).length;
   const progressPercent = Math.round((completedCount / steps.length) * 100);
+  if (progressPercent >= 100) return null;
 
   return (
     <ThemedCard className="mb-6 overflow-hidden border-blue-200/80 p-0 shadow-md">

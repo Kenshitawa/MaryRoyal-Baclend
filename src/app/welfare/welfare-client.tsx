@@ -53,6 +53,7 @@ type WelfareProduct = {
   monthlyAmount: number | null;
   status: string;
 };
+type WelfareRank = { rank: number; name: string; role: string };
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -83,6 +84,7 @@ export default function WelfareClient({ role }: { role: string; userId?: string;
 
   const [members, setMembers] = useState<WelfareMember[]>([]);
   const [products, setProducts] = useState<WelfareProduct[]>([]);
+  const [leaderboard, setLeaderboard] = useState<WelfareRank[]>([]);
   const [myMember, setMyMember] = useState<WelfareMember | null>(null);
   const [tab, setTab] = useState<"my-welfare" | "overview" | "loans" | "products">("my-welfare");
   const [busy, setBusy] = useState(false);
@@ -117,6 +119,8 @@ export default function WelfareClient({ role }: { role: string; userId?: string;
         setMyMember(selfData.member);
         if (!isAdmin || role === "NON_TEACHING_STAFF") setProducts(selfData.products ?? []);
       }
+      const ranksRes = await fetch("/api/welfare?scope=leaderboard");
+      if (ranksRes.ok) setLeaderboard((await ranksRes.json()).leaderboard ?? []);
     } catch { /* ignore */ }
   }, [isAdmin, role]);
 
@@ -241,6 +245,7 @@ export default function WelfareClient({ role }: { role: string; userId?: string;
       {/* My Welfare Tab */}
       {tab === "my-welfare" && (
         <div className="space-y-6">
+          {leaderboard.length > 0 && <section className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="font-bold text-slate-900 dark:text-white">Welfare champions</h2><p className="mt-1 text-xs text-slate-500">Members with the most contributions. Individual contribution amounts are private.</p><ol className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{leaderboard.map((item) => <li key={item.rank} className="flex items-center gap-3 rounded-xl bg-blue-50/70 p-3 dark:bg-slate-800"><span className="grid h-8 w-8 place-items-center rounded-full bg-blue-700 text-xs font-bold text-white">{item.rank}</span><span><span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">{item.name}</span><span className="text-[11px] text-slate-500">{item.role.replaceAll("_", " ")}</span></span></li>)}</ol></section>}
           {!myMember ? (
             <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center">
               <HeartHandshake size={32} className="mx-auto mb-3 text-slate-300" />

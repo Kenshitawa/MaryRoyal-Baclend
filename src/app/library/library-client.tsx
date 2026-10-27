@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Library, Plus, BookOpen, Check, RotateCcw, X, AlertCircle, Loader2, Package } from "lucide-react";
+import { Library, Plus, BookOpen, Check, RotateCcw, X, AlertCircle, Loader2, Package, Sparkles } from "lucide-react";
 
 type Textbook = {
   id: string;
@@ -55,6 +55,8 @@ export default function LibraryClient({ role }: { role: string; userId?: string 
   const [showIssue, setShowIssue] = useState<string | null>(null); // textbookId
   const [allStaff, setAllStaff] = useState<{ id: string; name: string }[]>([]);
   const [createForm, setCreateForm] = useState({ title: "", subject: "", grade: "", publisher: "", curriculumCode: "", totalCopies: "1" });
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
   const [issueForm, setIssueForm] = useState({ teacherId: "", copyNumber: "", dueDate: "", remarks: "" });
 
   const load = useCallback(async () => {
@@ -91,6 +93,18 @@ export default function LibraryClient({ role }: { role: string; userId?: string 
     e.preventDefault();
     const ok = await apiPost({ _action: "create", ...createForm, totalCopies: Number(createForm.totalCopies) });
     if (ok) { notify("Textbook registered!"); setShowCreate(false); void load(); }
+  }
+
+  async function draftBook() {
+    setAiBusy(true);
+    try {
+      const response = await fetch("/api/ai/draft", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: "textbook", grade: createForm.grade, subject: createForm.subject, topic: aiTopic }) });
+      const data = await response.json();
+      if (!response.ok) { notify(data.error ?? "Draft unavailable", false); return; }
+      setCreateForm((current) => ({ ...current, ...data.draft }));
+      notify("Catalogue suggestion added. Verify all details before saving.");
+    } catch { notify("Could not reach the local AI service.", false); }
+    finally { setAiBusy(false); }
   }
 
   async function handleIssue(e: React.FormEvent, textbookId: string) {
@@ -235,6 +249,8 @@ export default function LibraryClient({ role }: { role: string; userId?: string 
       {showCreate && (
         <Modal title="Register Textbook" onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
+            <Field label="Topic or curriculum context for optional AI suggestion" value={aiTopic} onChange={setAiTopic} />
+            <button type="button" onClick={() => void draftBook()} disabled={aiBusy || !createForm.grade || !createForm.subject || aiTopic.trim().length < 2} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-bold text-blue-800 disabled:opacity-50 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300"><Sparkles size={14}/>{aiBusy ? "Drafting locally…" : "Suggest record with local AI"}</button>
             <Field label="Title" value={createForm.title} onChange={(v) => setCreateForm((f) => ({ ...f, title: v }))} required />
             <div className="grid grid-cols-2 gap-3">
               <Field label="Subject" value={createForm.subject} onChange={(v) => setCreateForm((f) => ({ ...f, subject: v }))} required />

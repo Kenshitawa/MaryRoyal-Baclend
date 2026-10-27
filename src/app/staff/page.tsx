@@ -40,6 +40,7 @@ export default async function StaffDirectoryPage() {
               <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
                 School Faculty &amp; Staff
               </h1>
+              <p className="sr-only">Staff profiles</p>
               <p className="mt-1 text-xs text-blue-100 sm:text-sm">
                 Active team members, teaching assignments, contact details, and qualifications.
               </p>

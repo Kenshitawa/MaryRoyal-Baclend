@@ -3,7 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { makeActivitySession, makeSession } from "@/lib/session";
-const schema = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(200) });
+const schema = z.object({ email: z.string().trim().email().max(254), password: z.string().min(1).max(200) });
 export async function POST(request: Request) {
  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
  const now = Date.now(); const bucket = (globalThis as typeof globalThis & { loginBuckets?: Map<string, { count: number; start: number }> }).loginBuckets ?? new Map();

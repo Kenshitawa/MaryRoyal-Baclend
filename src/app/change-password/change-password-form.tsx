@@ -69,12 +69,13 @@ export default function ChangePasswordForm() {
 
       <div className="mt-6 space-y-4">
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+          <label htmlFor="new-password" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
             New Password
           </label>
           <div className="relative mt-1.5">
             <input
               name="password"
+              id="new-password"
               type={showPassword ? "text" : "password"}
               required
               minLength={12}
@@ -96,12 +97,13 @@ export default function ChangePasswordForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+          <label htmlFor="confirm-password" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
             Confirm Password
           </label>
           <div className="relative mt-1.5">
             <input
               name="confirmPassword"
+              id="confirm-password"
               type={showPassword ? "text" : "password"}
               required
               minLength={12}
@@ -152,7 +154,7 @@ export default function ChangePasswordForm() {
         className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-700 font-bold text-white shadow-md shadow-blue-700/20 transition hover:bg-blue-800 disabled:opacity-50"
       >
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
-        Save Password &amp; Continue
+          Update password &amp; continue
       </button>
     </form>
   );

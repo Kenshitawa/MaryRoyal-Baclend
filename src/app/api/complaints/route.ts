@@ -15,7 +15,7 @@ async function actor() {
 export async function GET() {
   const user = await actor();
   if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
-  const scope = user.role === "DIRECTOR" || user.role === "HEAD_TEACHER" ? "school" : user.role === "PARENT" || user.role === "SECRETARY" ? "self" : "school";
+  const scope = user.role === "DIRECTOR" || user.role === "HEAD_TEACHER" ? "school" : user.role === "PARENT" ? "self" : "school";
   if (!canInScope(user.role, "complaints", "view", scope)) { await db.auditEvent.create({ data: { actorId: user.id, action: "ACCESS_DENIED", entity: "Complaint" } }); return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   const where = scope === "school" ? {} : { openedById: user.id };
   const complaints = await db.complaint.findMany({ where, include: { openedBy: { select: { id: true, name: true, role: true } }, assignedTo: { select: { id: true, name: true, role: true } }, replies: { include: { author: { select: { id: true, name: true, role: true } } }, orderBy: { createdAt: "asc" } } }, orderBy: { updatedAt: "desc" }, take: 100 });
@@ -39,14 +39,8 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Add a category, subject, message and authorized school contact." }, { status: 400 });
   const learnerId = parsed.data.learnerId;
-  // Secretary can submit complaints without a guardian link — they log complaints on behalf of the school
-  if (user.role !== "SECRETARY") {
-    const link = await db.guardianLink.findUnique({ where: { userId_learnerId: { userId: user.id, learnerId } }, include: { learner: { select: { admissionStatus: true, archivedAt: true } } } });
-    if (!link || link.learner.admissionStatus !== "APPROVED" || link.learner.archivedAt) return NextResponse.json({ error: "That learner is not linked to your account." }, { status: 403 });
-  } else {
-    const learnerExists = await db.learner.findUnique({ where: { id: learnerId }, select: { id: true } });
-    if (!learnerExists) return NextResponse.json({ error: "Learner not found." }, { status: 404 });
-  }
+  const link = await db.guardianLink.findUnique({ where: { userId_learnerId: { userId: user.id, learnerId } }, include: { learner: { select: { admissionStatus: true, archivedAt: true } } } });
+  if (!link || link.learner.admissionStatus !== "APPROVED" || link.learner.archivedAt) return NextResponse.json({ error: "That learner is not linked to your account." }, { status: 403 });
   const assignedRole = parsed.data.recipientRole === "BOTH" ? "HEAD_TEACHER" : parsed.data.recipientRole;
   const assignedToId = (await db.user.findFirst({ where: { role: assignedRole, suspended: false }, select: { id: true } }))?.id ?? null;
   if (!assignedToId) return NextResponse.json({ error: "No active staff member is assigned to receive this complaint." }, { status: 409 });
@@ -58,7 +52,7 @@ export async function POST(request: Request) {
         message: parsed.data.message,
         audience: parsed.data.recipientRole,
         reporterName: user.name,
-        reporterRole: user.role === "SECRETARY" ? "SECRETARY" : "PARENT",
+        reporterRole: "PARENT",
         status: "RECEIVED",
         openedById: user.id,
         assignedToId,

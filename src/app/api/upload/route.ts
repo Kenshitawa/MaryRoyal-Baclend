@@ -80,8 +80,8 @@ export async function POST(request: Request) {
       type: file.type,
       size: file.size,
     });
-  } catch (error) {
-    console.error("Upload error:", error);
+  } catch {
+    console.error("Assignment upload failed.");
     return NextResponse.json({ error: "File upload failed" }, { status: 500 });
   }
 }

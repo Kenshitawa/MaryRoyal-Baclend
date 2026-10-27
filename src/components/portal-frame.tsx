@@ -2,35 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { BookOpen, BookOpenCheck, CalendarCheck, FileText, GraduationCap, LogOut, ShieldCheck, Users, Wallet, Eye, ClipboardList, MessageCircle, Library, LayoutList, CalendarDays, HeartHandshake } from "lucide-react";
+import { Eye, LogOut } from "lucide-react";
 import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
 import { ThemeStyleControls } from "@/components/design-system/theme-provider";
 import PageNavigation from "@/components/page-navigation";
 import NotificationBell from "@/components/notification-bell";
+import { getRoleNavigation } from "@/lib/navigation";
 
-const route: Record<string, string> = {
-  Overview: "/dashboard",
-  Learners: "/learners",
-  Admissions: "/admissions",
-  Accounts: "/accounts",
-  Staff: "/staff",
-  Assessments: "/assessments",
-  Attendance: "/attendance",
-  Finance: "/finance",
-  Reports: "/reports",
-  "My learning": "/learning",
-  "My children": "/portal",
-  Assignments: "/assignments",
-  "Learning content": "/learning-content",
-  "KICD videos": "/learning-videos",
-  "Weekly teaching log": "/teaching-log",
-  Complaints: "/complaints",
-  Library: "/library",
-  "Schemes of work": "/schemes",
-  Timetable: "/timetable",
-  Welfare: "/welfare",
-};
 const roleTitle: Record<string, string> = {
   DIRECTOR: "Director",
   HEAD_TEACHER: "Head Teacher",
@@ -43,85 +22,6 @@ const roleTitle: Record<string, string> = {
   PARENT: "Parent",
   LEARNER: "Learner",
 };
-const links: Record<string, { label: string; icon: typeof Users }[]> = {
-  DIRECTOR: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Learners", icon: Users },
-    { label: "Admissions", icon: ClipboardList },
-    { label: "Accounts", icon: ShieldCheck },
-    { label: "Staff", icon: Users },
-    { label: "Assessments", icon: BookOpen },
-    { label: "Attendance", icon: CalendarCheck },
-    { label: "Finance", icon: Wallet },
-    { label: "Welfare", icon: HeartHandshake },
-    { label: "Reports", icon: FileText },
-    { label: "Timetable", icon: CalendarDays },
-    { label: "KICD videos", icon: BookOpenCheck },
-    { label: "Complaints", icon: MessageCircle },
-  ],
-  HEAD_TEACHER: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Learners", icon: Users },
-    { label: "Admissions", icon: ClipboardList },
-    { label: "Staff", icon: Users },
-    { label: "Assessments", icon: BookOpen },
-    { label: "Attendance", icon: CalendarCheck },
-    { label: "Finance", icon: Wallet },
-    { label: "Welfare", icon: HeartHandshake },
-    { label: "Timetable", icon: CalendarDays },
-    { label: "Schemes of work", icon: LayoutList },
-    { label: "KICD videos", icon: BookOpenCheck },
-    { label: "Weekly teaching log", icon: ClipboardList },
-    { label: "Complaints", icon: MessageCircle },
-  ],
-  DEPUTY: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Learners", icon: Users },
-    { label: "Attendance", icon: CalendarCheck },
-    { label: "Assessments", icon: BookOpen },
-    { label: "Library", icon: Library },
-    { label: "Schemes of work", icon: LayoutList },
-    { label: "Timetable", icon: CalendarDays },
-    { label: "KICD videos", icon: BookOpenCheck },
-  ],
-  SECRETARY: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Learners", icon: Users },
-    { label: "Admissions", icon: ClipboardList },
-    { label: "Finance", icon: Wallet },
-    { label: "Complaints", icon: MessageCircle },
-  ],
-  ACCOUNTANT: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Learners", icon: Users },
-    { label: "Finance", icon: Wallet },
-  ],
-  TEACHER: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Attendance", icon: CalendarCheck },
-    { label: "Assessments", icon: BookOpen },
-    { label: "Learners", icon: Users },
-    { label: "Assignments", icon: ClipboardList },
-    { label: "Learning content", icon: BookOpenCheck },
-    { label: "KICD videos", icon: BookOpenCheck },
-    { label: "Weekly teaching log", icon: FileText },
-    { label: "Schemes of work", icon: LayoutList },
-    { label: "Library", icon: Library },
-    { label: "Welfare", icon: HeartHandshake },
-    { label: "Timetable", icon: CalendarDays },
-  ],
-  WELFARE_CHAIR: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Welfare", icon: HeartHandshake },
-  ],
-  NON_TEACHING_STAFF: [
-    { label: "Overview", icon: GraduationCap },
-    { label: "Welfare", icon: HeartHandshake },
-  ],
-  PARENT: [{ label: "My children", icon: Users }, { label: "Complaints", icon: MessageCircle }],
-  LEARNER: [{ label: "My learning", icon: BookOpen }, { label: "Assignments", icon: ClipboardList }],
-};
-
 export default async function PortalFrame({ children, active }: { children: React.ReactNode; active: string }) {
   const token = (await cookies()).get("mary_session")?.value;
   const session = token ? await readSession(token) : null;
@@ -129,7 +29,7 @@ export default async function PortalFrame({ children, active }: { children: Reac
   const user = await db.user.findUnique({ where: { id: session.id }, select: { name: true, role: true, avatarUrl: true, suspended: true, forcePasswordChange: true } });
   if (!user || user.suspended) redirect("/");
   if (user.forcePasswordChange) redirect("/change-password");
-  let nav = links[user.role] ?? links.LEARNER;
+  let nav = getRoleNavigation(user.role);
   if (user.role === "TEACHER") {
     const classTeacher = await db.classTeacherAssignment.findFirst({ where: { teacherId: session.id }, select: { id: true } });
     if (!classTeacher) nav = nav.filter((item) => item.label !== "Attendance");
@@ -145,8 +45,8 @@ export default async function PortalFrame({ children, active }: { children: Reac
         </Link>
         <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Workspace</p>
         <nav aria-label="Main navigation" className="space-y-1">
-          {nav.map(({ label, icon: Icon }) => (
-            <Link key={label} href={route[label] ?? "/dashboard"} aria-current={active === label ? "page" : undefined}
+          {nav.map(({ label, href, icon: Icon }) => (
+            <Link key={label} href={href} aria-current={active === label ? "page" : undefined}
               className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-semibold transition ${active === label ? "bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" : "text-slate-600 hover:bg-slate-50 hover:text-blue-700 dark:text-slate-400 dark:hover:bg-slate-800"}`}>
               <Icon size={18} />{label}{active === label && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-600" />}
             </Link>
@@ -154,7 +54,7 @@ export default async function PortalFrame({ children, active }: { children: Reac
         </nav>
         <div className="mt-auto rounded-2xl bg-gradient-to-br from-blue-800 to-blue-600 p-4 text-white">
           <p className="text-sm font-bold">Hard work pays</p>
-          <p className="mt-1 text-xs leading-relaxed text-blue-100">Nurturing Excellence Through CBE</p>
+          <p className="mt-1 text-xs leading-relaxed text-white">Nurturing Excellence Through CBE</p>
         </div>
       </aside>
       <div className="min-w-0 flex-1 lg:ml-[250px]">
@@ -192,8 +92,8 @@ export default async function PortalFrame({ children, active }: { children: Reac
         <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-68px)] outline-none">{children}</div>
       </div>
       <nav aria-label="Mobile navigation" className="mobile-nav fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-slate-200/80 bg-white/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,35,70,.07)] backdrop-blur lg:hidden">
-        {nav.slice(0, 4).map(({ label, icon: Icon }) => (
-          <Link key={label} href={route[label] ?? "/dashboard"} aria-current={active === label ? "page" : undefined}
+        {nav.slice(0, 4).map(({ label, href, icon: Icon }) => (
+          <Link key={label} href={href} aria-current={active === label ? "page" : undefined}
             className={`flex min-h-12 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold ${active === label ? "text-blue-700" : "text-slate-500"}`}>
             <Icon size={18} />{label}
           </Link>

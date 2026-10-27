@@ -11,24 +11,18 @@ import {
   CalendarCheck,
   BookOpen,
   LogOut,
-  ShieldCheck,
   Wallet,
-  FileText,
   ChevronRight,
   ClipboardCheck,
   CircleDollarSign,
   Clock3,
   Eye,
-  ClipboardList,
-  MessageCircle,
   ArrowRight,
   TrendingUp,
-  HeartHandshake,
-  Library,
   CalendarDays,
-  LayoutList,
 } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
+import { getRoleNavigation } from "@/lib/navigation";
 import { DirectorGettingStartedChecklist } from "@/components/director-checklist";
 
 const roleTitles: Record<string, string> = {
@@ -51,27 +45,6 @@ const roleCopy: Record<string, string> = {
   TEACHER: "Your classes, learners and classroom tasks in one place.",
   WELFARE_CHAIR: "Manage staff welfare contributions, savings and loan requests.",
   NON_TEACHING_STAFF: "View your welfare savings, loan applications and contributions.",
-};
-
-const hrefs: Record<string, string> = {
-  Overview: "/dashboard",
-  Learners: "/learners",
-  Accounts: "/accounts",
-  Assessments: "/assessments",
-  Attendance: "/attendance",
-  Finance: "/finance",
-  Reports: "/reports",
-  "Audit log": "/audit",
-  Assignments: "/assignments",
-  "Learning content": "/learning-content",
-  "Daily teaching log": "/teaching-log",
-  "Weekly teaching log": "/teaching-log",
-  Complaints: "/complaints",
-  Admissions: "/admissions",
-  Library: "/library",
-  "Schemes of work": "/schemes",
-  Timetable: "/timetable",
-  Welfare: "/welfare",
 };
 
 const kes = (value: number) =>
@@ -242,16 +215,17 @@ export default async function Dashboard() {
     );
 
     // Director setup checklist stats
-    const [examSessions, attendanceCount, marksCount, paymentsCount] = await Promise.all([
+    const [examSessions, attendanceCount, marksCount, paymentsCount, feeStructuresCount] = await Promise.all([
       db.examSession.count(),
       db.attendance.count(),
       db.assessment.count({ where: { status: { not: "DRAFT" } } }),
       db.feePayment.count({ where: { status: "RECORDED" } }),
+      db.feeStructure.count(),
     ]);
     directorStats = {
       staffCount: staff,
       learnerCount: learners,
-      feeStructuresCount: 0, // FeeStructure model may not exist in all migrations
+      feeStructuresCount,
       examSessionsCount: examSessions,
       attendanceCount,
       marksCount,
@@ -418,81 +392,8 @@ export default async function Dashboard() {
     });
   }
 
-  const navItems: { label: string; icon: React.ElementType }[] =
-    role === "DIRECTOR"
-      ? [
-          { label: "Overview", icon: GraduationCap },
-          { label: "Learners", icon: Users },
-          { label: "Accounts", icon: ShieldCheck },
-          { label: "Admissions", icon: ClipboardList },
-          { label: "Assessments", icon: BookOpen },
-          { label: "Attendance", icon: CalendarCheck },
-          { label: "Finance", icon: Wallet },
-          { label: "Reports", icon: FileText },
-          { label: "Complaints", icon: MessageCircle },
-        ]
-      : role === "HEAD_TEACHER"
-      ? [
-          { label: "Overview", icon: GraduationCap },
-          { label: "Learners", icon: Users },
-          { label: "Assessments", icon: BookOpen },
-          { label: "Attendance", icon: CalendarCheck },
-          { label: "Finance", icon: Wallet },
-          { label: "Timetable", icon: CalendarDays },
-          { label: "Schemes of work", icon: LayoutList },
-          { label: "Welfare", icon: HeartHandshake },
-          { label: "Weekly teaching log", icon: ClipboardList },
-          { label: "Complaints", icon: MessageCircle },
-        ]
-      : role === "DEPUTY"
-      ? [
-          { label: "Overview", icon: GraduationCap },
-          { label: "Learners", icon: Users },
-          { label: "Attendance", icon: CalendarCheck },
-          { label: "Assessments", icon: BookOpen },
-          { label: "Library", icon: Library },
-          { label: "Schemes of work", icon: LayoutList },
-          { label: "Timetable", icon: CalendarDays },
-        ]
-      : role === "SECRETARY"
-      ? [
-          { label: "Overview", icon: GraduationCap },
-          { label: "Learners", icon: Users },
-          { label: "Admissions", icon: ClipboardList },
-          { label: "Finance", icon: Wallet },
-          { label: "Complaints", icon: MessageCircle },
-        ]
-      : role === "ACCOUNTANT"
-      ? [
-          { label: "Overview", icon: GraduationCap },
-          { label: "Finance", icon: Wallet },
-          { label: "Learners", icon: Users },
-        ]
-      : role === "WELFARE_CHAIR" || role === "NON_TEACHING_STAFF"
-      ? [
-          { label: "Overview", icon: GraduationCap },
-          { label: "Welfare", icon: HeartHandshake },
-        ]
-      : [
-          { label: "Overview", icon: GraduationCap },
-          { label: "Attendance", icon: CalendarCheck },
-          { label: "Assessments", icon: BookOpen },
-          { label: "Learners", icon: Users },
-          { label: "Assignments", icon: ClipboardList },
-          { label: "Learning content", icon: BookOpen },
-          { label: "Schemes of work", icon: LayoutList },
-          { label: "Library", icon: Library },
-          { label: "Timetable", icon: CalendarDays },
-          { label: "Welfare", icon: HeartHandshake },
-          { label: "Weekly teaching log", icon: FileText },
-        ];
-
-  // Hide attendance nav for teacher without class assignment
-  let nav = navItems;
-  if (
-    role === "TEACHER" &&
-    !(await db.classTeacherAssignment.findFirst({ where: { teacherId: user.id }, select: { id: true } }))
-  ) {
+  let nav = getRoleNavigation(role);
+  if (role === "TEACHER" && !(await db.classTeacherAssignment.findFirst({ where: { teacherId: user.id }, select: { id: true } }))) {
     nav = nav.filter((item) => item.label !== "Attendance");
   }
 
@@ -514,7 +415,7 @@ export default async function Dashboard() {
   return (
     <div className="min-h-screen lg:flex">
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden h-screen w-[264px] shrink-0 flex-col overflow-y-auto border-r border-slate-200/80 bg-[#f1f6ff] px-4 py-6 lg:flex dark:border-slate-800 dark:bg-slate-950">
+      <aside className="school-sidebar sticky top-0 z-30 hidden h-screen w-[264px] shrink-0 flex-col overflow-y-auto border-r border-slate-200/80 bg-[#f1f6ff] px-4 py-6 lg:flex dark:border-slate-800 dark:bg-slate-950">
         <Link href="/dashboard" className="mb-9 flex items-center gap-3 px-2">
           <Image src="/mary-royal-logo.png" alt="Mary Royal School" width={44} height={44} className="rounded-xl" />
           <span>
@@ -526,10 +427,10 @@ export default async function Dashboard() {
         <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Workspace</p>
 
         <nav aria-label="Main navigation" className="space-y-1">
-          {nav.map(({ label, icon: Icon }) => (
+          {nav.map(({ label, href, icon: Icon }) => (
             <Link
               key={label}
-              href={hrefs[label] ?? "/dashboard"}
+              href={href}
               aria-current={label === "Overview" ? "page" : undefined}
               className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition ${
                 label === "Overview"
@@ -557,7 +458,7 @@ export default async function Dashboard() {
       </aside>
 
       {/* Main content area */}
-      <div className="w-full min-w-0 flex-1 lg:ml-[264px]">
+      <div className="w-full min-w-0 flex-1">
         {/* Top header */}
         <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-slate-200/70 bg-white/90 px-4 backdrop-blur-xl sm:px-7 lg:px-10 dark:border-slate-800/70 dark:bg-slate-950/90">
           <div className="flex items-center gap-3 lg:hidden">
@@ -940,10 +841,10 @@ export default async function Dashboard() {
                 {nav
                   .filter((item) => item.label !== "Overview")
                   .slice(0, 5)
-                  .map(({ label, icon: Icon }) => (
+                  .map(({ label, href, icon: Icon }) => (
                     <Link
                       key={label}
-                      href={hrefs[label] ?? "#"}
+                      href={href}
                       className="group flex items-center gap-3 rounded-xl border border-slate-100 p-3 transition hover:border-blue-100 hover:bg-blue-50/60 dark:border-slate-800 dark:hover:border-blue-900 dark:hover:bg-blue-950/30"
                     >
                       <span className="grid h-9 w-9 place-items-center rounded-lg bg-slate-50 text-slate-600 transition group-hover:bg-white group-hover:text-blue-700 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-slate-700 dark:group-hover:text-blue-400">
@@ -1009,12 +910,12 @@ export default async function Dashboard() {
       {/* Mobile navigation */}
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-slate-200/80 bg-white/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,35,70,.07)] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-950/95"
+        className="mobile-nav fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-slate-200/80 bg-white/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,35,70,.07)] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-950/95"
       >
-        {nav.slice(0, 4).map(({ label, icon: Icon }) => (
+        {nav.slice(0, 4).map(({ label, href, icon: Icon }) => (
           <Link
             key={label}
-            href={hrefs[label] ?? "/dashboard"}
+            href={href}
             aria-current={label === "Overview" ? "page" : undefined}
             className={`flex min-h-12 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold ${
               label === "Overview" ? "text-blue-700 dark:text-blue-400" : "text-slate-500 dark:text-slate-400"
