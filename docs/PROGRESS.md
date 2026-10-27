@@ -216,3 +216,9 @@
 - Full E2E: 8/9 passed on the most recent full run. The Director workflow then passed mobile layout and reached the admission PDF fetch, but a later targeted rerun timed out waiting for that PDF API response. A fully green E2E suite is not confirmed.
 - Local state: ran `npm run reset:fresh -- --yes` after E2E; verified one Director and zero learners, invoices, assessments, or attendance records. `http://localhost:3000/` returns 200; Director login returns `ok: true` and `forcePasswordChange: true`. Dev server restarted.
 - Known issues remain: investigate the intermittent/slow admission PDF request under E2E; run the complete suite to green; finish route-by-route security/IDOR review before production data; address the 39 lint warnings; extract actual service code before claiming a separate backend; configure Git remotes and obtain explicit authorization before publishing.
+
+## Production/publishing review — 2026-10-27
+- Inspected both supplied repositories: each is reachable and contains only its initial `LICENSE` commit. The current app is a Next.js full-stack monolith; no independent frontend/backend source is present.
+- `npm audit` and `npm audit --omit=dev` both report zero vulnerabilities. This does not clear application-level security gaps.
+- Attempted the explicitly requested push to `MaryRoyal-frontend` without force-pushing. GitHub rejected the configured account `apakalaundryservices-stack` with HTTP 403; nothing was published. The user must connect an account with repository write access or grant that identity collaborator access.
+- Production status remains blocked: SQLite-only schema, unvalidated PostgreSQL migration, incomplete security/IDOR and retention/backup controls, non-green full E2E, and demo credential in local bootstrap. Use synthetic data for tomorrow's training; do not enter real learner records or make the app public yet.
