@@ -80,7 +80,7 @@ This remains a local prototype, not a school-ready production system. Important 
 
 ## Production deployment preparation
 
-The app now has a PostgreSQL schema/migration path, a one-time Director bootstrap, a database health endpoint, and private Supabase Storage support. Read [the production deployment guide](docs/DEPLOYMENT_GUIDE.md) before deploying. Choose one host for the **whole Next.js app** (Vercel or Render); it is not a separately deployable frontend and backend. `MaryRoyal-frontend` is being prepared as the complete app checkout for deployment; `MaryRoyal-Baclend` remains a backend source snapshot and must not be deployed separately. Production setup still requires your own Supabase project, secrets, private storage bucket and legal/privacy sign-off. The remaining app-security and workflow gaps in the roadmap mean this is not yet cleared for real learner data.
+The app now has a PostgreSQL schema/migration path, a one-time Director bootstrap, a database health endpoint, and private Supabase Storage support. Read [the production deployment guide](docs/DEPLOYMENT_GUIDE.md) before deploying. Choose one host for the **whole Next.js app** (Vercel or Render); it is not a separately deployable frontend and backend. `MaryRoyal-frontend` is the canonical complete app checkout for deployment; `MaryRoyal-Baclend` remains a backend source snapshot and must not be deployed separately. Production setup still requires your own Supabase project, secrets, private storage bucket and legal/privacy sign-off. The remaining app-security and workflow gaps in the roadmap mean this is not yet cleared for real learner data.
 
 ## Frontend/backend repository layout
 
