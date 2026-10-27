@@ -81,3 +81,4 @@ export async function deleteStoredFile(kind: "private" | "assignments" | "avatar
   if (relativePath.startsWith("..") || isAbsolute(relativePath)) throw new Error("Invalid file path.");
   await unlink(path);
 }
+
