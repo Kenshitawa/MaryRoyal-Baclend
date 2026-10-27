@@ -30,7 +30,7 @@ For each phase: read this file; run the app locally; run lint, type-check and av
 ## Production deployment preparation
 - Keep the full Next.js monolith on one app host; frontend/backend repository snapshots are not independently deployable services.
 - Local mode uses SQLite. Production builds use `prisma/postgresql/schema.prisma`; deploy migrations before the one-time Director bootstrap.
-- Store private files in a private Supabase Storage bucket on Vercel or on the mounted persistent disk in `render.yaml`. Vercel's 4.5 MB Function body cap is below current upload limits; use Render until direct/resumable browser-to-storage uploads are implemented.
+- Store private files in a private Supabase Storage bucket on Vercel or on the mounted persistent disk in `render.yaml`. Admission and assignment files are capped at 4 MiB, with API routes also rejecting multipart bodies above 4 MiB plus 64 KiB so they remain below Vercel's 4.5 MB function body cap.
 - Do not call the app production-ready while security, privacy, live PostgreSQL, backup/restore and full E2E items remain open.
 
 ## U11 final acceptance
