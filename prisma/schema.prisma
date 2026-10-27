@@ -12,6 +12,8 @@ enum Role {
   SECRETARY
   ACCOUNTANT
   TEACHER
+  WELFARE_CHAIR
+  NON_TEACHING_STAFF
   PARENT
   LEARNER
 }
@@ -65,6 +67,17 @@ model User {
   rubricsCreated      CbcRubric[]        @relation("RubricCreator")
   waiversRequested    FeeWaiver[]        @relation("WaiverRequester")
   waiversApproved     FeeWaiver[]        @relation("WaiverApprover")
+  isWelfareChair      Boolean            @default(false)
+  textbooksCreated    Textbook[]         @relation("TextbookCreator")
+  textbooksIssued     TextbookIssue[]    @relation("TextbookIssuer")
+  textbooksReceived   TextbookIssue[]    @relation("TextbookRecipient")
+  schemesOfWork       SchemeOfWork[]     @relation("SchemeAuthor")
+  timetablesCreated   SchoolTimetable[]  @relation("TimetableCreator")
+  timetablesVerified  SchoolTimetable[]  @relation("TimetableVerifier")
+  welfareMember       WelfareMember?
+  welfareContributionsRecorded WelfareContribution[] @relation("WelfareRecorder")
+  welfareProductsCreated WelfareProduct[] @relation("WelfareProductCreator")
+  notifications       Notification[]
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -281,6 +294,8 @@ model Assignment {
   maxScore     Int      @default(100)
   answerKey    String?
   autoMark     Boolean  @default(false)
+  attachmentUrl String?
+  attachmentType String?
   teacherId    String
   teacher      User     @relation(fields: [teacherId], references: [id])
   createdAt    DateTime @default(now())
@@ -295,6 +310,8 @@ model AssignmentSubmission {
   learnerId    String
   learner      Learner    @relation(fields: [learnerId], references: [id])
   response     String
+  attachmentUrl String?
+  attachmentType String?
   score        Int?
   feedback     String?
   status       String     @default("SUBMITTED")
@@ -708,4 +725,178 @@ model FeeWaiver {
 
   @@index([invoiceId, status])
   @@index([requestedById])
+}
+
+model Textbook {
+  id              String          @id @default(cuid())
+  title           String
+  subject         String
+  grade           String
+  publisher       String?
+  curriculumCode  String?
+  totalCopies     Int             @default(1)
+  availableCopies Int             @default(1)
+  createdById     String
+  createdBy       User            @relation("TextbookCreator", fields: [createdById], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  issues          TextbookIssue[]
+
+  @@index([grade, subject])
+}
+
+model TextbookIssue {
+  id              String    @id @default(cuid())
+  textbookId      String
+  textbook        Textbook  @relation(fields: [textbookId], references: [id], onDelete: Cascade)
+  teacherId       String
+  teacher         User      @relation("TextbookRecipient", fields: [teacherId], references: [id])
+  copyNumber      String?
+  issuedById      String
+  issuedBy        User      @relation("TextbookIssuer", fields: [issuedById], references: [id])
+  issuedAt        DateTime  @default(now())
+  dueDate         DateTime?
+  status          String    @default("ISSUED_PENDING_CONFIRMATION") // ISSUED_PENDING_CONFIRMATION, CONFIRMED, RETURN_REQUESTED, RETURNED
+  confirmedAt     DateTime?
+  returnedAt      DateTime?
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([teacherId, status])
+  @@index([textbookId, status])
+}
+
+model SchemeOfWork {
+  id                  String    @id @default(cuid())
+  teacherId           String
+  teacher             User      @relation("SchemeAuthor", fields: [teacherId], references: [id])
+  grade               String
+  subject             String
+  term                String
+  year                Int       @default(2026)
+  week                Int       @default(1)
+  lessonNo            Int       @default(1)
+  strand              String
+  subStrand           String
+  learningOutcomes    String
+  keyInquiryQuestions String?
+  learningExperiences String
+  learningResources   String
+  assessmentMethods   String
+  reflection          String?
+  status              String    @default("SUBMITTED") // DRAFT, SUBMITTED, CONFIRMED_BY_DEPUTY, VERIFIED_BY_HEADTEACHER, REJECTED
+  deputyFeedback      String?
+  deputyConfirmedAt   DateTime?
+  headteacherFeedback String?
+  headteacherVerifiedAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([teacherId, term])
+  @@index([grade, subject, term])
+  @@index([status])
+}
+
+model SchoolTimetable {
+  id              String    @id @default(cuid())
+  title           String
+  term            String
+  year            Int       @default(2026)
+  status          String    @default("DRAFT") // DRAFT, PENDING_APPROVAL, PUBLISHED
+  scheduleJson    String
+  createdById     String
+  createdBy       User      @relation("TimetableCreator", fields: [createdById], references: [id])
+  verifiedById    String?
+  verifiedBy      User?     @relation("TimetableVerifier", fields: [verifiedById], references: [id])
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([term, status])
+}
+
+model WelfareMember {
+  id                  String                @id @default(cuid())
+  userId              String                @unique
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalSavings        Int                   @default(0)
+  joinedAt            DateTime              @default(now())
+  active              Boolean               @default(true)
+  contributions       WelfareContribution[]
+  loans               WelfareLoan[]
+
+  @@index([active])
+}
+
+model WelfareContribution {
+  id              String         @id @default(cuid())
+  memberId        String
+  member          WelfareMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  month           Int
+  year            Int
+  amount          Int
+  category        String         @default("MONTHLY_SAVINGS")
+  productTitle    String?
+  receiptRef      String?
+  notes           String?
+  recordedById    String
+  recordedBy      User           @relation("WelfareRecorder", fields: [recordedById], references: [id])
+  createdAt       DateTime       @default(now())
+
+  @@index([memberId, year, month])
+  @@index([category])
+}
+
+model WelfareProduct {
+  id              String    @id @default(cuid())
+  title           String
+  description     String
+  targetAmount    Int       @default(0)
+  monthlyAmount   Int?
+  status          String    @default("ACTIVE")
+  createdById     String
+  createdBy       User      @relation("WelfareProductCreator", fields: [createdById], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model WelfareLoan {
+  id                    String         @id @default(cuid())
+  memberId              String
+  member                WelfareMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  type                  String
+  principalAmount       Int
+  repaymentTermMonths   Int            @default(1)
+  monthlyDeduction      Int            @default(0)
+  status                String         @default("PENDING_HEADTEACHER")
+  repaidAmount          Int            @default(0)
+  purpose               String?
+  headteacherNotes      String?
+  headteacherApprovedAt DateTime?
+  directorNotes         String?
+  disbursedAt           DateTime?
+  paidAt                DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([memberId, status])
+  @@index([status])
+}
+
+model Notification {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  message         String
+  type            String    @default("INFO")
+  link            String?
+  read            Boolean   @default(false)
+  actionRequired  Boolean   @default(false)
+  actionDone      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, read])
+  @@index([userId, actionRequired])
 }

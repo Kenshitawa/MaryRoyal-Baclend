@@ -13,6 +13,11 @@ import {
   Send,
   Sparkles,
   Users,
+  Camera,
+  FileText,
+  X,
+  ExternalLink,
+  Image as ImageIcon,
 } from "lucide-react";
 
 type Teaching = { grade: string; subject: string };
@@ -24,6 +29,8 @@ type Submission = {
   feedback: string | null;
   status: string;
   submittedAt: string;
+  attachmentUrl?: string | null;
+  attachmentType?: string | null;
   learner?: { id: string; name: string; admissionNo: string };
 };
 type Assignment = {
@@ -36,6 +43,8 @@ type Assignment = {
   maxScore: number;
   autoMark: boolean;
   createdAt: string;
+  attachmentUrl?: string | null;
+  attachmentType?: string | null;
   submissions: Submission[];
 };
 
@@ -56,6 +65,11 @@ export default function AssignmentsClient({
   const [maxScore, setMaxScore] = useState("100");
   const [dueAt, setDueAt] = useState("");
   const [autoMark, setAutoMark] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [attachmentType, setAttachmentType] = useState<string | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [learnerAttachments, setLearnerAttachments] = useState<Record<string, { url: string; type: string }>>({});
+  const [learnerUploading, setLearnerUploading] = useState<Record<string, boolean>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -104,6 +118,37 @@ export default function AssignmentsClient({
     }
   }
 
+  async function handleFileUpload(file: File, forAssignmentId?: string) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (!forAssignmentId) setUploadingAttachment(true);
+    else setLearnerUploading((prev) => ({ ...prev, [forAssignmentId]: true }));
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      if (!forAssignmentId) {
+        setAttachmentUrl(data.url);
+        setAttachmentType(data.type);
+        setMessage("Assignment photo/file uploaded successfully.");
+      } else {
+        setLearnerAttachments((prev) => ({
+          ...prev,
+          [forAssignmentId]: { url: data.url, type: data.type },
+        }));
+        setMessage("Work photo uploaded. Click 'Submit Work' to finish.");
+      }
+    } catch (err: unknown) {
+      setMessage(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      if (!forAssignmentId) setUploadingAttachment(false);
+      else setLearnerUploading((prev) => ({ ...prev, [forAssignmentId]: false }));
+    }
+  }
+
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -121,6 +166,8 @@ export default function AssignmentsClient({
           maxScore: Number(maxScore),
           answerKey: answerKey || undefined,
           autoMark,
+          attachmentUrl: attachmentUrl || undefined,
+          attachmentType: attachmentType || undefined,
         }),
       });
       const data = await response.json();
@@ -129,6 +176,8 @@ export default function AssignmentsClient({
       setInstructions("");
       setTopic("");
       setAnswerKey("");
+      setAttachmentUrl(null);
+      setAttachmentType(null);
       setShowCreate(false);
       setMessage("Assignment published to learners successfully.");
       await refresh();
@@ -141,8 +190,9 @@ export default function AssignmentsClient({
 
   async function submit(assignment: Assignment) {
     const responseText = answers[assignment.id]?.trim();
-    if (!responseText) {
-      setMessage("Please write an answer before submitting.");
+    const attached = learnerAttachments[assignment.id];
+    if (!responseText && !attached) {
+      setMessage("Please write an answer or upload a photo of your work before submitting.");
       return;
     }
     setBusy(true);
@@ -150,7 +200,11 @@ export default function AssignmentsClient({
       const response = await fetch(`/api/assignments/${assignment.id}/submissions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ response: responseText }),
+        body: JSON.stringify({
+          response: responseText || "Attached handwritten work",
+          attachmentUrl: attached?.url,
+          attachmentType: attached?.type,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -506,6 +560,79 @@ export default function AssignmentsClient({
             </label>
           </div>
 
+          {/* Scan or Photo of Assignment */}
+          <div className="mt-4 rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                  <Camera size={14} />
+                  Scan / Take Picture of Assignment (Optional)
+                </label>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Snap a photo of the textbook page or handwritten questions for learners to see.
+                </p>
+              </div>
+
+              <div>
+                <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold cursor-pointer transition shadow-sm">
+                  <Camera size={14} />
+                  {uploadingAttachment ? "Uploading..." : "Take Photo / Choose File"}
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    capture="environment"
+                    className="sr-only"
+                    disabled={uploadingAttachment}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleFileUpload(file);
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {attachmentUrl && (
+              <div className="mt-3 flex items-center gap-3 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800">
+                {attachmentType?.startsWith("image/") ? (
+                  <img
+                    src={attachmentUrl}
+                    alt="Assignment preview"
+                    className="h-14 w-14 rounded-lg object-cover border"
+                  />
+                ) : (
+                  <div className="h-14 w-14 rounded-lg bg-blue-100 dark:bg-blue-900/60 flex items-center justify-center text-blue-700 dark:text-blue-300">
+                    <FileText size={24} />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                    Attachment ready to publish
+                  </p>
+                  <a
+                    href={attachmentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-blue-600 hover:underline inline-flex items-center gap-1"
+                  >
+                    View file <ExternalLink size={10} />
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttachmentUrl(null);
+                    setAttachmentType(null);
+                  }}
+                  className="p-1 text-red-600 hover:bg-red-50 rounded-lg dark:hover:bg-red-950/40"
+                  title="Remove attachment"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
             <button
               type="button"
@@ -570,6 +697,9 @@ export default function AssignmentsClient({
           ) : (
             filteredAssignments.map((assignment) => {
               const submission = assignment.submissions[0];
+              const isLearnerUploading = learnerUploading[assignment.id];
+              const currentLearnerAttachment = learnerAttachments[assignment.id];
+
               return (
                 <article
                   key={assignment.id}
@@ -584,6 +714,11 @@ export default function AssignmentsClient({
                         {assignment.autoMark && (
                           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                             Auto-marked
+                          </span>
+                        )}
+                        {assignment.attachmentUrl && (
+                          <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 flex items-center gap-1">
+                            <Camera size={10} /> Photo/Scan Attached
                           </span>
                         )}
                       </div>
@@ -613,6 +748,54 @@ export default function AssignmentsClient({
                     {assignment.instructions}
                   </div>
 
+                  {/* Scanned/Attached Picture from Teacher */}
+                  {assignment.attachmentUrl && (
+                    <div className="mt-3 p-3 rounded-2xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <ImageIcon size={14} className="text-blue-600" />
+                          Teacher&apos;s Scanned Assignment Sheet
+                        </span>
+                        <a
+                          href={assignment.attachmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          View Full Size <ExternalLink size={11} />
+                        </a>
+                      </div>
+
+                      {assignment.attachmentType?.startsWith("image/") || (!assignment.attachmentType?.includes("pdf") && assignment.attachmentUrl.match(/\.(jpeg|jpg|png|webp|gif)$/i)) ? (
+                        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-black/5">
+                          <img
+                            src={assignment.attachmentUrl}
+                            alt="Teacher's assignment sheet"
+                            className="max-h-80 w-auto rounded-lg mx-auto object-contain cursor-pointer hover:opacity-95 transition"
+                            onClick={() => window.open(assignment.attachmentUrl!, "_blank")}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl">
+                          <FileText size={24} className="text-blue-600 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                              Assignment Document (PDF)
+                            </p>
+                          </div>
+                          <a
+                            href={assignment.attachmentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shrink-0"
+                          >
+                            Open PDF
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Learner View: Answer / Submission form */}
                   {isLearner && (
                     <div className="mt-4">
@@ -631,6 +814,18 @@ export default function AssignmentsClient({
                               Teacher Feedback: {submission.feedback}
                             </p>
                           )}
+                          {submission.attachmentUrl && (
+                            <div className="mt-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/60">
+                              <a
+                                href={submission.attachmentUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-emerald-800 dark:text-emerald-300 font-semibold underline inline-flex items-center gap-1"
+                              >
+                                View your submitted photo/document <ExternalLink size={10} />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -644,9 +839,44 @@ export default function AssignmentsClient({
                             onChange={(e) =>
                               setAnswers((old) => ({ ...old, [assignment.id]: e.target.value }))
                             }
-                            placeholder="Type your response here…"
+                            placeholder="Type your response here or upload a photo of your handwritten work below…"
                             className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-xs text-slate-900 outline-none focus:border-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                           />
+
+                          {/* Upload photo of handwritten work */}
+                          <div className="flex flex-wrap items-center gap-3">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer transition">
+                              <Camera size={14} className="text-blue-600" />
+                              {isLearnerUploading ? "Uploading photo..." : "Attach Photo of Handwritten Work"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                capture="environment"
+                                className="sr-only"
+                                disabled={isLearnerUploading}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) void handleFileUpload(file, assignment.id);
+                                }}
+                              />
+                            </label>
+
+                            {(currentLearnerAttachment?.url || submission?.attachmentUrl) && (
+                              <div className="inline-flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-lg">
+                                <CheckCircle2 size={13} />
+                                Photo attached
+                                <a
+                                  href={currentLearnerAttachment?.url || submission?.attachmentUrl || "#"}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="underline ml-1"
+                                >
+                                  View
+                                </a>
+                              </div>
+                            )}
+                          </div>
+
                           <button
                             disabled={busy}
                             onClick={() => void submit(assignment)}
@@ -697,6 +927,34 @@ export default function AssignmentsClient({
                             <p className="mt-2 text-xs leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
                               {sub.response}
                             </p>
+
+                            {/* Learner's attached photo of handwritten work */}
+                            {sub.attachmentUrl && (
+                              <div className="mt-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {sub.attachmentType?.startsWith("image/") || sub.attachmentUrl.match(/\.(jpeg|jpg|png|webp|gif)$/i) ? (
+                                    <img
+                                      src={sub.attachmentUrl}
+                                      alt="Learner work"
+                                      className="h-12 w-12 rounded object-cover border"
+                                    />
+                                  ) : (
+                                    <FileText size={20} className="text-blue-600" />
+                                  )}
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                    Learner Uploaded Handwritten Work
+                                  </span>
+                                </div>
+                                <a
+                                  href={sub.attachmentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2.5 py-1 text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-lg hover:underline inline-flex items-center gap-1"
+                                >
+                                  View Full Size <ExternalLink size={10} />
+                                </a>
+                              </div>
+                            )}
 
                             {sub.status === "SUBMITTED" && (
                               <details className="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800">

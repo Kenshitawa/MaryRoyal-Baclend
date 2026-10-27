@@ -157,3 +157,41 @@
   - **Director Executive Reports & Visual Charts**: Upgraded `/reports` into an executive intelligence hub with interactive visual analytics (Fee Collections & Arrears Aging term comparison bars, CBC Assessment 4-level competency descriptor breakdown [EE/ME/AE/BE], and Grade Enrollment population distribution) displayed side-by-side with live CSV export download panels.
   - **Parent Fee Payment Instructions**: Integrated a comprehensive interactive "How to Pay School Fees" guide into the Parent Portal featuring step-by-step M-PESA Paybill (522123) instructions with one-click copy buttons for child admission numbers, KCB Bank account deposit details, and campus accounts office hours.
 - Tested: `npm run lint` passed (0 errors); `npm run typecheck` passed (0 errors); `npm test` passed (20/20 unit tests across domain, learner profiles, admissions, and permission matrix). Local git tree clean.
+
+## Welfare, Library, Schemes of Work, AI Timetable, Notifications & Photo Assignments — 2026-10-27
+- Built:
+  - **Staff Welfare Module (`/welfare`)**:
+    - Created dedicated Welfare schema (`WelfareMember`, `WelfareContribution`, `WelfareLoan`, `WelfareProduct`) strictly separate from school operational finance.
+    - Added `WELFARE_CHAIR` and `NON_TEACHING_STAFF` roles; Non-Teaching Staff portal scoped strictly to welfare benefits.
+    - Enforced loan ceiling at 60% of member total savings.
+    - Enforced salary advance cap of KES 3,000, available only from the 15th of each month.
+    - Two-stage approval workflow: Applicant → Head Teacher review → Director authorization → Welfare Chair/Director disbursement.
+  - **Deputy Library & Textbook Tracking (`/library`)**:
+    - Added textbook inventory and issuance tracking (`Textbook`, `TextbookIssue`).
+    - Deputy issues textbooks with copy numbers and return due dates.
+    - Teacher receives notification and confirms receipt with one click.
+    - Returns requested and confirmed with live inventory count adjustments.
+  - **Schemes of Work Verification (`/schemes`)**:
+    - Added CBC Scheme of Work model (`SchemeOfWork`) with strands, sub-strands, outcomes, inquiries, experiences, resources, assessment methods, and teacher reflection.
+    - Automated approval routing: Teacher submits → Deputy reviews & confirms → Head Teacher verifies or requests revision with feedback.
+  - **AI-Assisted Timetable & Daily Teaching Widget (`/timetable`)**:
+    - AI-assisted heuristic timetable synthesizer generating balanced 5-day schedules (40 periods/week, 8 periods/day) aligned with KICD CBC guidelines.
+    - Automatic conflict-free teacher allocation based on teaching assignments.
+    - Interactive slot editor for Deputy and Head Teacher.
+    - Verification workflow: Deputy draft → Head Teacher verifies and publishes.
+    - Publishing notifies all teachers; Teacher Dashboard (`/dashboard`) highlights "Today's Lessons" with period, time, subject, and class venue.
+  - **Assignment Photo & Scan Upload (`/assignments`, `/api/upload`)**:
+    - Local file storage endpoint (`/api/upload`) supporting images and PDFs up to 10MB without external paid APIs.
+    - Teachers can snap a photo or scan textbook problem sets and publish them directly to learners.
+    - Learners view high-resolution assignment sheets and can snap/upload photos of their completed handwritten work.
+    - Teachers inspect submitted photos and evaluate CBC work.
+  - **System Notifications (`NotificationBell`)**:
+    - Header notification bell with live badge count and polling.
+    - Highlights action-required items (loans awaiting approval, schemes awaiting confirmation, textbooks awaiting confirmation).
+- Tested:
+  - `npm test`: 4 test suites, 21 unit & permission tests passed (100% pass rate).
+  - `npm run typecheck`: TypeScript compiler passed with 0 errors (`tsc --noEmit`).
+  - `npm run lint`: ESLint passed with 0 errors.
+  - `npm run build`: Production bundle compiled successfully for all 69 static and dynamic routes.
+  - `git diff --check`: 0 whitespace errors.
+

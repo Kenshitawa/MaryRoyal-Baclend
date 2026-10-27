@@ -5,7 +5,11 @@ import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
 import { canInScope } from "@/lib/permissions";
 
-const submitSchema = z.object({ response: z.string().trim().min(1).max(5000) });
+const submitSchema = z.object({
+  response: z.string().trim().min(1).max(5000),
+  attachmentUrl: z.string().trim().max(1000).optional().nullable(),
+  attachmentType: z.string().trim().max(50).optional().nullable(),
+});
 const markSchema = z.object({ learnerId: z.string().min(1), score: z.number().int().min(0).max(1000), feedback: z.string().trim().max(600).optional() });
 async function actor() {
   const token = (await cookies()).get("mary_session")?.value;
@@ -34,7 +38,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const score = assignment.autoMark && assignment.answerKey ? (normalized(parsed.data.response) === normalized(assignment.answerKey) ? assignment.maxScore : 0) : null;
   try {
     const submission = await db.$transaction(async tx => {
-      const row = await tx.assignmentSubmission.upsert({ where: { assignmentId_learnerId: { assignmentId: id, learnerId: learner.learnerId } }, create: { assignmentId: id, learnerId: learner.learnerId, response: parsed.data.response, score, status: assignment.autoMark ? "MARKED" : "SUBMITTED" }, update: { response: parsed.data.response, score, status: assignment.autoMark ? "MARKED" : "SUBMITTED", feedback: null, submittedAt: new Date() } });
+      const row = await tx.assignmentSubmission.upsert({
+        where: { assignmentId_learnerId: { assignmentId: id, learnerId: learner.learnerId } },
+        create: {
+          assignmentId: id,
+          learnerId: learner.learnerId,
+          response: parsed.data.response,
+          attachmentUrl: parsed.data.attachmentUrl ?? null,
+          attachmentType: parsed.data.attachmentType ?? null,
+          score,
+          status: assignment.autoMark ? "MARKED" : "SUBMITTED",
+        },
+        update: {
+          response: parsed.data.response,
+          attachmentUrl: parsed.data.attachmentUrl ?? null,
+          attachmentType: parsed.data.attachmentType ?? null,
+          score,
+          status: assignment.autoMark ? "MARKED" : "SUBMITTED",
+          feedback: null,
+          submittedAt: new Date(),
+        },
+      });
       await tx.auditEvent.create({ data: { actorId: user.id, action: assignment.autoMark ? "ASSIGNMENT_AUTO_MARKED" : "ASSIGNMENT_SUBMITTED", entity: "AssignmentSubmission", entityId: row.id } });
       return row;
     });

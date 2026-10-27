@@ -23,6 +23,10 @@ import {
   MessageCircle,
   ArrowRight,
   TrendingUp,
+  HeartHandshake,
+  Library,
+  CalendarDays,
+  LayoutList,
 } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
 import { DirectorGettingStartedChecklist } from "@/components/director-checklist";
@@ -34,15 +38,19 @@ const roleTitles: Record<string, string> = {
   SECRETARY: "Secretary",
   ACCOUNTANT: "Accountant",
   TEACHER: "Teacher",
+  WELFARE_CHAIR: "Welfare Chair",
+  NON_TEACHING_STAFF: "Non-Teaching Staff",
 };
 
 const roleCopy: Record<string, string> = {
   DIRECTOR: "A clear view of learning, people and school operations.",
   HEAD_TEACHER: "Lead learning, review admissions and support your team.",
-  DEPUTY: "Stay on top of attendance and the daily rhythm of school.",
+  DEPUTY: "Stay on top of attendance, library and the daily rhythm of school.",
   SECRETARY: "Manage learner admissions and school records.",
   ACCOUNTANT: "Manage invoices, payments and school collections.",
   TEACHER: "Your classes, learners and classroom tasks in one place.",
+  WELFARE_CHAIR: "Manage staff welfare contributions, savings and loan requests.",
+  NON_TEACHING_STAFF: "View your welfare savings, loan applications and contributions.",
 };
 
 const hrefs: Record<string, string> = {
@@ -60,6 +68,10 @@ const hrefs: Record<string, string> = {
   "Weekly teaching log": "/teaching-log",
   Complaints: "/complaints",
   Admissions: "/admissions",
+  Library: "/library",
+  "Schemes of work": "/schemes",
+  Timetable: "/timetable",
+  Welfare: "/welfare",
 };
 
 const kes = (value: number) =>
@@ -153,6 +165,8 @@ export default async function Dashboard() {
     actor: { name: string } | null;
   }[] = [];
   let assignments: { grade: string; subject: string }[] = [];
+  let teacherTodayLessons: { id: string; period: number; time: string; subject: string; grade: string; room?: string }[] = [];
+  const todayDayName = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Africa/Nairobi" }).format(new Date());
   let collectionPercent = 0;
   let feeRows: { grade: string; invoiced: number; collected: number; balance: number }[] = [];
   let payrollSummary = { period: "", total: 0, paid: 0, pending: 0, staffCount: 0 };
@@ -308,11 +322,26 @@ export default async function Dashboard() {
       select: { grade: true, subject: true },
     });
     const grades = [...new Set(assignments.map((item) => item.grade))];
-    const [learners, pending, attendance] = await Promise.all([
+    const [learners, pending, attendance, publishedTimetable] = await Promise.all([
       db.learner.count({ where: { grade: { in: grades }, archivedAt: null } }),
       db.assessment.count({ where: { enteredById: user.id, status: { in: ["DRAFT", "RETURNED"] } } }),
       db.attendance.count({ where: { date: today, learner: { grade: { in: grades } } } }),
+      db.schoolTimetable.findFirst({
+        where: { status: "PUBLISHED" },
+        orderBy: { createdAt: "desc" },
+        select: { scheduleJson: true },
+      }),
     ]);
+    if (publishedTimetable?.scheduleJson) {
+      try {
+        const slots = JSON.parse(publishedTimetable.scheduleJson);
+        if (Array.isArray(slots)) {
+          teacherTodayLessons = slots
+            .filter((s: { teacherId?: string; day?: string }) => s.teacherId === user.id && s.day?.toLowerCase() === todayDayName.toLowerCase())
+            .sort((a: { period: number }, b: { period: number }) => a.period - b.period);
+        }
+      } catch {}
+    }
     gradeRows = grades.map((grade) => ({ grade, _count: { id: 0 } }));
     metrics = [
       { label: "My Learners", value: String(learners), note: "In your assigned grades", iconName: "users", tone: "blue" },
@@ -335,7 +364,7 @@ export default async function Dashboard() {
       { label: "Complaints Logged", value: String(complaintsCount), note: "Total on record", iconName: "clipboard", tone: "purple" },
     ];
     void recentAdmissions; // available for future recent-activity panel
-  } else {
+  } else if (role === "ACCOUNTANT") {
     // Accountant only
     const invoices = await db.feeInvoice.findMany({
       include: {
@@ -361,6 +390,23 @@ export default async function Dashboard() {
       { label: "Fees Invoiced", value: kes(totals.invoiced), note: "Total invoiced", iconName: "dollar", tone: "purple" },
       { label: "Payments Received", value: kes(totals.paid), note: "Recorded payments", iconName: "wallet", tone: "emerald" },
       { label: "Outstanding", value: kes(totals.balance), note: "Remaining fee balances", iconName: "clock", tone: "amber" },
+    ];
+  } else {
+    // WELFARE_CHAIR and NON_TEACHING_STAFF
+    const member = await db.welfareMember.findUnique({
+      where: { userId: user.id },
+      include: {
+        loans: { orderBy: { createdAt: "desc" } },
+      },
+    });
+    const totalSavings = member?.totalSavings ?? 0;
+    const activeLoans = member?.loans.filter((l) => ["DISBURSED", "APPROVED"].includes(l.status)).length ?? 0;
+    const pendingLoans = member?.loans.filter((l) => l.status.startsWith("PENDING")).length ?? 0;
+    metrics = [
+      { label: "My Welfare Savings", value: kes(totalSavings), note: "Total accumulated savings", iconName: "wallet", tone: "blue" },
+      { label: "Max Loan Limit (60%)", value: kes(Math.floor(totalSavings * 0.6)), note: "60% of total savings", iconName: "dollar", tone: "emerald" },
+      { label: "Active Loans", value: String(activeLoans), note: "Ongoing loans", iconName: "clipboard", tone: "purple" },
+      { label: "Pending Approvals", value: String(pendingLoans), note: "Awaiting Head/Director", iconName: "clock", tone: "amber" },
     ];
   }
 
@@ -392,6 +438,9 @@ export default async function Dashboard() {
           { label: "Assessments", icon: BookOpen },
           { label: "Attendance", icon: CalendarCheck },
           { label: "Finance", icon: Wallet },
+          { label: "Timetable", icon: CalendarDays },
+          { label: "Schemes of work", icon: LayoutList },
+          { label: "Welfare", icon: HeartHandshake },
           { label: "Weekly teaching log", icon: ClipboardList },
           { label: "Complaints", icon: MessageCircle },
         ]
@@ -401,6 +450,9 @@ export default async function Dashboard() {
           { label: "Learners", icon: Users },
           { label: "Attendance", icon: CalendarCheck },
           { label: "Assessments", icon: BookOpen },
+          { label: "Library", icon: Library },
+          { label: "Schemes of work", icon: LayoutList },
+          { label: "Timetable", icon: CalendarDays },
         ]
       : role === "SECRETARY"
       ? [
@@ -416,6 +468,11 @@ export default async function Dashboard() {
           { label: "Finance", icon: Wallet },
           { label: "Learners", icon: Users },
         ]
+      : role === "WELFARE_CHAIR" || role === "NON_TEACHING_STAFF"
+      ? [
+          { label: "Overview", icon: GraduationCap },
+          { label: "Welfare", icon: HeartHandshake },
+        ]
       : [
           { label: "Overview", icon: GraduationCap },
           { label: "Attendance", icon: CalendarCheck },
@@ -423,6 +480,10 @@ export default async function Dashboard() {
           { label: "Learners", icon: Users },
           { label: "Assignments", icon: ClipboardList },
           { label: "Learning content", icon: BookOpen },
+          { label: "Schemes of work", icon: LayoutList },
+          { label: "Library", icon: Library },
+          { label: "Timetable", icon: CalendarDays },
+          { label: "Welfare", icon: HeartHandshake },
           { label: "Weekly teaching log", icon: FileText },
         ];
 
@@ -753,33 +814,91 @@ export default async function Dashboard() {
                   </p>
                 </div>
               ) : role === "TEACHER" ? (
-                <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                  {gradeRows.length ? (
-                    gradeRows.map((item) => (
-                      <div
-                        key={item.grade}
-                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40"
-                      >
-                        <div>
-                          <p className="text-sm font-bold text-slate-800 dark:text-white">{item.grade}</p>
-                          <p className="mt-1 text-[11px] text-slate-500">
-                            {new Set(assignments.filter((a) => a.grade === item.grade).map((a) => a.subject)).size} subjects
-                          </p>
-                        </div>
-                        <Link
-                          href="/assessments"
-                          aria-label={`Open ${item.grade} assessments`}
-                          className="grid h-9 w-9 place-items-center rounded-lg bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-400"
-                        >
-                          <ChevronRight size={17} />
-                        </Link>
+                <div className="mt-5 space-y-4">
+                  {/* Today's Lessons Card */}
+                  <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
+                    <div className="flex items-center justify-between pb-2 border-b border-blue-200/60 dark:border-blue-900/40">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4 text-blue-700 dark:text-blue-400" />
+                        <span className="text-xs font-bold text-blue-950 dark:text-blue-200">
+                          Today&apos;s Lessons ({todayDayName})
+                        </span>
                       </div>
-                    ))
-                  ) : (
-                    <p className="col-span-2 rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">
-                      No class assignments are linked to this account yet.
+                      <Link
+                        href="/timetable"
+                        className="text-[11px] font-bold text-blue-700 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                      >
+                        Full timetable <ArrowRight size={11} />
+                      </Link>
+                    </div>
+
+                    {teacherTodayLessons.length === 0 ? (
+                      <p className="mt-2.5 text-xs text-blue-800 dark:text-blue-300">
+                        No lessons scheduled on your timetable for today ({todayDayName}).
+                      </p>
+                    ) : (
+                      <div className="mt-2.5 space-y-2">
+                        {teacherTodayLessons.map((l) => (
+                          <div
+                            key={l.id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/80 text-xs shadow-sm"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-[10px]">
+                                P{l.period}
+                              </span>
+                              <div>
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                  {l.subject}
+                                </span>
+                                <span className="text-[10px] text-slate-500 ml-2">
+                                  ({l.grade})
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                              {l.time}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Assigned Classes */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Assigned Classes
                     </p>
-                  )}
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {gradeRows.length ? (
+                        gradeRows.map((item) => (
+                          <div
+                            key={item.grade}
+                            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40"
+                          >
+                            <div>
+                              <p className="text-sm font-bold text-slate-800 dark:text-white">{item.grade}</p>
+                              <p className="mt-1 text-[11px] text-slate-500">
+                                {new Set(assignments.filter((a) => a.grade === item.grade).map((a) => a.subject)).size} subjects
+                              </p>
+                            </div>
+                            <Link
+                              href="/assessments"
+                              aria-label={`Open ${item.grade} assessments`}
+                              className="grid h-9 w-9 place-items-center rounded-lg bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-400"
+                            >
+                              <ChevronRight size={17} />
+                            </Link>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="col-span-2 rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">
+                          No class assignments are linked to this account yet.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ) : gradeRows.length ? (
                 <div className="mt-6 space-y-4">

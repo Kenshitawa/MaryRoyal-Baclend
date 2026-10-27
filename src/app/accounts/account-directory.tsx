@@ -37,6 +37,8 @@ const roles = [
   "SECRETARY",
   "ACCOUNTANT",
   "TEACHER",
+  "WELFARE_CHAIR",
+  "NON_TEACHING_STAFF",
   "PARENT",
   "LEARNER",
 ];
