@@ -307,3 +307,17 @@
 - **Tested:** Static browser smoke checks at 360, 390, 768, 1024 and 1280 px: all returned HTTP 200, no horizontal overflow or browser page errors, mobile menu opens/closes and section links navigate, and all 24 image references load. `git diff --check` passed. Live homepage remains HTTP 200 but still serves the old stylesheet.
 - **Known issues:** Publishing to cPanel is outstanding. Browser control stopped because its safety layer could not verify the active Chrome URL; no live files were overwritten. The archive is ready in the repository root.
 - **Next:** Upload and extract the archive contents into `/public_html`, preserving the existing `.htaccess`, verification files and `.well-known/`; verify the live mobile menu and images, then remove temporary ZIP files from the public document root.
+
+## Step 1 — Staff Accounts with Full Bio Information — 2026-10-28
+- **Built:**
+  - Added additive models and relations to Prisma schema: StaffProfile, StaffEmergencyContact, StaffReferee, StaffDocument, StaffHistory, StaffDraft synchronized across SQLite and PostgreSQL schemas.
+  - Implemented centralized permission matrix updates in src/lib/permissions.ts: Director can create, edit, suspend, reactivate, archive, delete, reset passwords for all staff roles. Head Teacher can create staff accounts for Deputy, Secretary, Accountant, Teacher, Non-Teaching Staff, and edit bio/qualifications of those staff; cannot create/edit Director or Head Teacher, and cannot delete or suspend accounts.
+  - Built Data Protection Act compliant restricted statutory details access: KRA PIN, NSSF number, SHA number, bank account details are strictly restricted on server and API to Director, Head Teacher, and Accountant only; view and update operations append audit log entries (STAFF_STATUTORY_VIEWED, STAFF_STATUTORY_UPDATED).
+  - Built 7-step Add Staff multi-step wizard (/staff/new) with draft autosave, validation, passport photo upload, Kenyan phone validation (+254/07/01), emergency contacts/next of kin, 2 referees, restricted payroll details, private document uploads, and one-time printable credentials slip.
+  - Built 8-tab Staff Profile page (/staff/[id]): Biography, Employment, Qualifications, Documents, Classes & Timetable, Attendance, Activity / Edit History with old & new value diffs, and Restricted Statutory & Payroll.
+  - Built Staff Directory (/staff) with real-time search, role filter pills, status filter (Active, Suspended), CSV export with formula sanitization and restricted field scrubbing, and bulk CSV import modal with downloadable template and validation preview.
+  - Added comprehensive test suite tests/staff.test.ts (8 tests) and updated tests/permissions.test.ts (12 tests) covering all staff permissions and statutory restrictions.
+- **Tested:**
+  - npm run typecheck passed (0 errors).
+  - npm test passed (7 test suites, 38/38 tests passing).
+  - Prisma validation passed for SQLite and PostgreSQL.

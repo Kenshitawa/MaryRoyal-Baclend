@@ -79,6 +79,10 @@ model User {
   welfareContributionsRecorded WelfareContribution[] @relation("WelfareRecorder")
   welfareProductsCreated WelfareProduct[] @relation("WelfareProductCreator")
   notifications       Notification[]
+  staffProfile        StaffProfile?
+  staffDocumentsUploaded StaffDocument[] @relation("StaffDocUploader")
+  staffHistoryAuthored StaffHistory[]   @relation("StaffHistoryActor")
+  staffDraftsCreated  StaffDraft[]     @relation("StaffDraftCreator")
 }
 model Learner {
   id          String       @id @default(cuid())
@@ -901,3 +905,108 @@ model Notification {
   @@index([userId, read])
   @@index([userId, actionRequired])
 }
+
+model StaffProfile {
+  id                         String   @id @default(cuid())
+  userId                     String   @unique
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gender                     String?
+  dateOfBirth                DateTime?
+  nationalId                 String?
+  nationality                String   @default("Kenyan")
+  maritalStatus              String?
+  alternatePhone             String?
+  residenceAddress           String?
+  county                     String?
+  dateJoined                 DateTime?
+  employmentType             String?  // permanent, contract, BOM, part-time
+  department                 String?
+  lineManager                String?
+  probationEndDate           DateTime?
+  educationHistory           String?  // structured JSON or notes
+  professionalQualifications String?
+  certificates               String?
+  specializations            String?
+  yearsOfExperience          Float?
+  previousEmployers          String?
+  // Restricted statutory and payroll details (DIRECTOR, HEAD_TEACHER, ACCOUNTANT only)
+  kraPin                     String?
+  nssfNumber                 String?
+  shaNumber                  String?  // Social Health Authority (formerly NHIF)
+  bankName                   String?
+  bankAccountName            String?
+  bankAccountNumber          String?
+  bankBranch                 String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  emergencyContacts          StaffEmergencyContact[]
+  referees                   StaffReferee[]
+  documents                  StaffDocument[]
+  editHistory                StaffHistory[]
+  @@index([userId])
+}
+
+model StaffEmergencyContact {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  fullName       String
+  relationship   String
+  phone          String
+  isNextOfKin    Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  @@index([staffProfileId])
+}
+
+model StaffReferee {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  fullName       String
+  organization   String
+  title          String?
+  phone          String
+  email          String?
+  createdAt      DateTime     @default(now())
+  @@index([staffProfileId])
+}
+
+model StaffDocument {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  category       String       // ID_COPY, TSC_CARD, ACADEMIC_CERTIFICATE, CV, CONTRACT, PASSPORT_PHOTO
+  originalName   String
+  storageKey     String       @unique
+  contentType    String
+  sizeBytes      Int
+  uploadedById   String
+  uploadedBy     User         @relation("StaffDocUploader", fields: [uploadedById], references: [id])
+  createdAt      DateTime     @default(now())
+  @@index([staffProfileId, category])
+}
+
+model StaffHistory {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  actorId        String
+  actor          User         @relation("StaffHistoryActor", fields: [actorId], references: [id])
+  field          String
+  oldValue       String?
+  newValue       String?
+  createdAt      DateTime     @default(now())
+  @@index([staffProfileId, createdAt])
+}
+
+model StaffDraft {
+  id          String   @id @default(cuid())
+  createdById String
+  createdBy   User     @relation("StaffDraftCreator", fields: [createdById], references: [id])
+  payload     String   @default("{}")
+  currentStep Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([createdById, updatedAt])
+}
+

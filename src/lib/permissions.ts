@@ -7,10 +7,10 @@ const ALL: Role[] = [...ALL_STAFF, Role.PARENT, Role.LEARNER];
 const matrix: Record<Resource, Partial<Record<Action, Role[]>>> = {
  dashboard: { view: ALL },
  accounts: { view: [Role.DIRECTOR], create: [Role.DIRECTOR], update: [Role.DIRECTOR], delete: [Role.DIRECTOR] },
- staff: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.ACCOUNTANT, Role.TEACHER] },
+ staff: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.ACCOUNTANT, Role.TEACHER], create: [Role.DIRECTOR, Role.HEAD_TEACHER], update: [Role.DIRECTOR, Role.HEAD_TEACHER], delete: [Role.DIRECTOR] },
  staffAttendance: { view: ALL_STAFF, create: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY], update: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY] },
  learners: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY, Role.TEACHER, Role.PARENT, Role.LEARNER, Role.ACCOUNTANT], update: [Role.HEAD_TEACHER, Role.SECRETARY], approve: [Role.HEAD_TEACHER], delete: [Role.DIRECTOR] },
- admissions: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY], create: [Role.DIRECTOR, Role.SECRETARY], update: [Role.DIRECTOR, Role.SECRETARY], submit: [Role.DIRECTOR, Role.SECRETARY], approve: [Role.HEAD_TEACHER] },
+ admissions: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.SECRETARY], create: [Role.DIRECTOR, Role.SECRETARY], update: [Role.DIRECTOR, Role.SECRETARY], submit: [Role.DIRECTOR, Role.SECRETARY], approve: [Role.HEAD_TEACHER], delete: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.SECRETARY] },
  learnerAccounts: { create: [Role.DIRECTOR, Role.SECRETARY] },
  attendance: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER, Role.PARENT, Role.LEARNER], create: [Role.DIRECTOR, Role.TEACHER], update: [Role.DIRECTOR, Role.TEACHER] },
  assessments: { view: [Role.DIRECTOR, Role.HEAD_TEACHER, Role.DEPUTY, Role.TEACHER, Role.PARENT, Role.LEARNER], create: [Role.TEACHER], update: [Role.TEACHER], approve: [Role.HEAD_TEACHER, Role.DIRECTOR], review: [Role.HEAD_TEACHER], release: [Role.DIRECTOR] },
@@ -76,3 +76,32 @@ export function can(role: Role, resource: Resource, action: Action): boolean { r
 export function canInScope(role: Role, resource: Resource, action: Action, scope: DataScope): boolean { return can(role, resource, action) && (scopes[resource][scope]?.includes(role) ?? false); }
 export function assertCan(role: Role, resource: Resource, action: Action): void { if (!can(role, resource, action)) throw new Error("FORBIDDEN"); }
 export function assertCanInScope(role: Role, resource: Resource, action: Action, scope: DataScope): void { if (!canInScope(role, resource, action, scope)) throw new Error("FORBIDDEN"); }
+
+export function canManageStaffTarget(actorRole: Role, targetRole: Role): boolean {
+  if (actorRole === Role.DIRECTOR) return true;
+  if (actorRole === Role.HEAD_TEACHER) {
+    return targetRole !== Role.DIRECTOR && targetRole !== Role.HEAD_TEACHER;
+  }
+  return false;
+}
+
+export function canDeleteStaffAccount(actorRole: Role): boolean {
+  return actorRole === Role.DIRECTOR;
+}
+
+export function canSuspendStaffAccount(actorRole: Role): boolean {
+  return actorRole === Role.DIRECTOR;
+}
+
+export function canViewStaffStatutory(actorRole: Role): boolean {
+  return actorRole === Role.DIRECTOR || actorRole === Role.HEAD_TEACHER || actorRole === Role.ACCOUNTANT;
+}
+
+export function canEditStaffStatutory(actorRole: Role, targetRole: Role): boolean {
+  if (actorRole === Role.DIRECTOR) return true;
+  if (actorRole === Role.HEAD_TEACHER) {
+    return targetRole !== Role.DIRECTOR && targetRole !== Role.HEAD_TEACHER;
+  }
+  return false;
+}
+

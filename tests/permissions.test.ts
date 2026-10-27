@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Role } from "@prisma/client";
-import { can, canInScope } from "../src/lib/permissions";
+import { can, canInScope, canManageStaffTarget, canDeleteStaffAccount, canSuspendStaffAccount, canViewStaffStatutory, canEditStaffStatutory } from "../src/lib/permissions";
 import { youtubeVideoId } from "../src/lib/learning-videos";
 
 const resources = [
@@ -17,8 +17,9 @@ const actions = [
 const grants: Record<Role, string[]> = {
   [Role.DIRECTOR]: [
     "dashboard:view", "accounts:view", "accounts:create", "accounts:update", "accounts:delete", "staff:view",
+    "staff:create", "staff:update", "staff:delete",
     "staffAttendance:view", "staffAttendance:create", "staffAttendance:update", "learners:view", "learners:delete",
-    "admissions:view", "admissions:create", "admissions:update", "admissions:submit", "learnerAccounts:create",
+    "admissions:view", "admissions:create", "admissions:update", "admissions:submit", "admissions:delete", "learnerAccounts:create",
     "attendance:view", "attendance:create", "attendance:update", "assessments:view", "assessments:approve", "assessments:release",
     "discipline:view", "discipline:create", "discipline:update", "finance:view", "invoices:view", "invoices:create",
     "payments:view", "payments:create", "payments:update", "payments:approve", "payroll:view", "payroll:approve",
@@ -31,8 +32,10 @@ const grants: Record<Role, string[]> = {
     "welfare:approve", "welfare:apply", "notifications:view", "notifications:update"
   ],
   [Role.HEAD_TEACHER]: [
-    "dashboard:view", "learners:view", "learners:update", "learners:approve", "staff:view", "staffAttendance:view",
-    "staffAttendance:create", "staffAttendance:update", "admissions:view", "admissions:approve", "attendance:view",
+    "dashboard:view", "learners:view", "learners:update", "learners:approve", "staff:view",
+    "staff:create", "staff:update",
+    "staffAttendance:view",
+    "staffAttendance:create", "staffAttendance:update", "admissions:view", "admissions:approve", "admissions:delete", "attendance:view",
     "assessments:view", "assessments:approve", "assessments:review", "discipline:view", "discipline:create", "discipline:update",
     "finance:view", "invoices:view", "payments:view", "payments:create", "payments:approve", "payroll:view", "payroll:create",
     "payroll:update", "feeStructures:view", "feeStructures:create", "feeStructures:update", "audit:view", "operations:view",
@@ -54,7 +57,7 @@ const grants: Record<Role, string[]> = {
   ],
   [Role.SECRETARY]: [
     "dashboard:view", "staff:view", "staffAttendance:view", "learners:view", "learners:update", "admissions:view",
-    "admissions:create", "admissions:update", "admissions:submit", "learnerAccounts:create", "finance:view",
+    "admissions:create", "admissions:update", "admissions:submit", "admissions:delete", "learnerAccounts:create", "finance:view",
     "invoices:view", "payments:view", "payments:create", "feeStructures:view",
     "welfare:view", "welfare:apply", "notifications:view", "notifications:update"
   ],
@@ -228,9 +231,78 @@ describe("permission matrix", () => {
     expect(can(Role.DEPUTY, "timetable", "create")).toBe(true);
     expect(can(Role.HEAD_TEACHER, "timetable", "verify")).toBe(true);
     expect(can(Role.TEACHER, "timetable", "view")).toBe(true);
-    expect(can(Role.TEACHER, "timetable", "create")).toBe(false);
+    // Staff permissions
+    expect(can(Role.DIRECTOR, "staff", "create")).toBe(true);
+    expect(can(Role.DIRECTOR, "staff", "update")).toBe(true);
+    expect(can(Role.DIRECTOR, "staff", "delete")).toBe(true);
+    expect(can(Role.HEAD_TEACHER, "staff", "create")).toBe(true);
+    expect(can(Role.HEAD_TEACHER, "staff", "update")).toBe(true);
+    expect(can(Role.HEAD_TEACHER, "staff", "delete")).toBe(false);
+    expect(can(Role.DEPUTY, "staff", "create")).toBe(false);
+    expect(can(Role.SECRETARY, "staff", "create")).toBe(false);
+    expect(can(Role.ACCOUNTANT, "staff", "create")).toBe(false);
+    expect(can(Role.TEACHER, "staff", "create")).toBe(false);
+    expect(can(Role.PARENT, "staff", "create")).toBe(false);
+    expect(can(Role.LEARNER, "staff", "create")).toBe(false);
+
+    // Admission draft deletion
+    expect(can(Role.DIRECTOR, "admissions", "delete")).toBe(true);
+    expect(can(Role.HEAD_TEACHER, "admissions", "delete")).toBe(true);
+    expect(can(Role.SECRETARY, "admissions", "delete")).toBe(true);
+    expect(can(Role.DEPUTY, "admissions", "delete")).toBe(false);
+    expect(can(Role.ACCOUNTANT, "admissions", "delete")).toBe(false);
+    expect(can(Role.TEACHER, "admissions", "delete")).toBe(false);
+    expect(can(Role.PARENT, "admissions", "delete")).toBe(false);
+    expect(can(Role.LEARNER, "admissions", "delete")).toBe(false);
+  });
+
+  it("enforces staff target management and statutory rules", () => {
+    // Director can manage all roles
+    expect(canManageStaffTarget(Role.DIRECTOR, Role.HEAD_TEACHER)).toBe(true);
+    expect(canManageStaffTarget(Role.DIRECTOR, Role.DEPUTY)).toBe(true);
+    expect(canManageStaffTarget(Role.DIRECTOR, Role.SECRETARY)).toBe(true);
+    expect(canManageStaffTarget(Role.DIRECTOR, Role.ACCOUNTANT)).toBe(true);
+    expect(canManageStaffTarget(Role.DIRECTOR, Role.TEACHER)).toBe(true);
+
+    // Head Teacher can manage Deputy, Secretary, Accountant, Teacher
+    expect(canManageStaffTarget(Role.HEAD_TEACHER, Role.DEPUTY)).toBe(true);
+    expect(canManageStaffTarget(Role.HEAD_TEACHER, Role.SECRETARY)).toBe(true);
+    expect(canManageStaffTarget(Role.HEAD_TEACHER, Role.ACCOUNTANT)).toBe(true);
+    expect(canManageStaffTarget(Role.HEAD_TEACHER, Role.TEACHER)).toBe(true);
+
+    // Head Teacher CANNOT manage Director or another Head Teacher
+    expect(canManageStaffTarget(Role.HEAD_TEACHER, Role.DIRECTOR)).toBe(false);
+    expect(canManageStaffTarget(Role.HEAD_TEACHER, Role.HEAD_TEACHER)).toBe(false);
+
+    // Other roles cannot manage any staff
+    expect(canManageStaffTarget(Role.DEPUTY, Role.TEACHER)).toBe(false);
+    expect(canManageStaffTarget(Role.SECRETARY, Role.TEACHER)).toBe(false);
+    expect(canManageStaffTarget(Role.TEACHER, Role.TEACHER)).toBe(false);
+
+    // Only Director can delete or suspend accounts
+    expect(canDeleteStaffAccount(Role.DIRECTOR)).toBe(true);
+    expect(canDeleteStaffAccount(Role.HEAD_TEACHER)).toBe(false);
+    expect(canSuspendStaffAccount(Role.DIRECTOR)).toBe(true);
+    expect(canSuspendStaffAccount(Role.HEAD_TEACHER)).toBe(false);
+
+    // Statutory access: DIRECTOR, HEAD_TEACHER, ACCOUNTANT view; DIRECTOR & HT edit
+    expect(canViewStaffStatutory(Role.DIRECTOR)).toBe(true);
+    expect(canViewStaffStatutory(Role.HEAD_TEACHER)).toBe(true);
+    expect(canViewStaffStatutory(Role.ACCOUNTANT)).toBe(true);
+    expect(canViewStaffStatutory(Role.TEACHER)).toBe(false);
+    expect(canViewStaffStatutory(Role.SECRETARY)).toBe(false);
+    expect(canViewStaffStatutory(Role.DEPUTY)).toBe(false);
+    expect(canViewStaffStatutory(Role.PARENT)).toBe(false);
+
+    expect(canEditStaffStatutory(Role.DIRECTOR, Role.TEACHER)).toBe(true);
+    expect(canEditStaffStatutory(Role.DIRECTOR, Role.HEAD_TEACHER)).toBe(true);
+    expect(canEditStaffStatutory(Role.HEAD_TEACHER, Role.TEACHER)).toBe(true);
+    expect(canEditStaffStatutory(Role.HEAD_TEACHER, Role.DIRECTOR)).toBe(false);
+    expect(canEditStaffStatutory(Role.HEAD_TEACHER, Role.HEAD_TEACHER)).toBe(false);
+    expect(canEditStaffStatutory(Role.ACCOUNTANT, Role.TEACHER)).toBe(false);
   });
 });
+
 
 describe("KICD video URL parsing", () => {
   it("accepts supported YouTube URL forms but rejects non-YouTube URLs and malformed ids", () => {
