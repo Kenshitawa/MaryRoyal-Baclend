@@ -1,18 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
-import { join } from "node:path";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { assertCanInScope } from "@/lib/permissions";
 import { readSession } from "@/lib/session";
 import { admissionDocumentCategory } from "@/lib/admissions";
+import { deleteStoredFile, writeStoredFile } from "@/lib/file-storage";
 
 export const runtime = "nodejs";
-const root = join(process.cwd(), "private-uploads", "admissions");
 const maxBytes = 8 * 1024 * 1024;
 const extensionByType = { "image/jpeg": "jpg", "image/png": "png", "application/pdf": "pdf" } as const;
-const filePath = (draftId: string, key: string) => join(root, draftId, key);
+const fileKey = (draftId: string, key: string) => `admissions/${draftId}/${key}`;
 function matchesSignature(type: string, bytes: Uint8Array) {
   if (type === "image/png") return bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
   if (type === "image/jpeg") return bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
@@ -45,18 +43,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const safeName = file.name.replace(/[\u0000-\u001f\u007f/\\]/g, "_").slice(0, 120) || "admission-document";
   const old = draft.documents.filter(document => document.category === category.data);
   try {
-    await mkdir(join(root, id), { recursive: true });
-    await writeFile(filePath(id, key), bytes, { flag: "wx" });
+    await writeStoredFile("private", fileKey(id, key), bytes, contentType);
     const document = await db.$transaction(async tx => {
       await tx.admissionDocument.deleteMany({ where: { draftId: id, category: category.data } });
       const created = await tx.admissionDocument.create({ data: { draftId: id, category: category.data, originalName: safeName, storageKey: key, contentType, sizeBytes: bytes.byteLength, uploadedById: user.id } });
       await tx.auditEvent.create({ data: { actorId: user.id, action: "ADMISSION_DOCUMENT_UPLOADED", entity: "AdmissionDocument", entityId: created.id } });
       return created;
     });
-    await Promise.all(old.map(document => unlink(filePath(id, document.storageKey)).catch(() => undefined)));
+    await Promise.all(old.map(document => deleteStoredFile("private", fileKey(id, document.storageKey)).catch(() => undefined)));
     return NextResponse.json({ document: { id: document.id, category: document.category, originalName: document.originalName, contentType: document.contentType, sizeBytes: document.sizeBytes, createdAt: document.createdAt } }, { status: 201 });
   } catch {
-    await unlink(filePath(id, key)).catch(() => undefined);
+    await deleteStoredFile("private", fileKey(id, key)).catch(() => undefined);
     return NextResponse.json({ error: "Document upload failed. Try a smaller image or PDF." }, { status: 500 });
   }
 }

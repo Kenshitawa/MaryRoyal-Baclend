@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import crypto from "crypto";
+import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { readSession } from "@/lib/session";
+import { writeStoredFile } from "@/lib/file-storage";
 
 async function actor() {
   const token = (await cookies()).get("mary_session")?.value;
@@ -63,16 +62,9 @@ export async function POST(request: Request) {
       ? "pdf"
       : file.type.split("/")[1] || "bin";
 
-    const uniqueId = crypto.randomBytes(12).toString("hex");
-    const filename = `${Date.now()}-${uniqueId}.${ext}`;
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "assignments");
-    await mkdir(uploadDir, { recursive: true });
-
-    const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/assignments/${filename}`;
+    const filename = `${randomUUID()}.${ext}`;
+    const fileUrl = `/api/uploads/assignments/${filename}`;
+    await writeStoredFile("assignments", filename, buffer, file.type);
 
     return NextResponse.json({
       url: fileUrl,

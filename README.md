@@ -1,11 +1,7 @@
-# Mary Royal SMS — Backend source
+# Mary Royal SMS — Backend source snapshot
 
-This repository contains the tracked API route handlers, shared server/data modules, Prisma schema and migrations, local scripts, and automated test source.
+This repository contains API route handlers, shared server modules, Prisma schemas/migrations, scripts and tests from the Mary Royal School Management System.
 
-## Architecture note
+**This is not an independently deployable backend service.** The current application is one Next.js App Router monolith: pages and API handlers share one project and server runtime. Deploy the complete project from the MaryRoyal-frontend repository to Vercel or Render. Do not create a separate Render service from this snapshot.
 
-The current application is a single Next.js App Router monolith. API handlers and shared server modules are part of that app; they are not an independently deployable service yet. Combine this source with the matching frontend repository at the same project root to restore the complete application. A standalone API/service extraction remains future work.
-
-After combining, use the root project README for local setup. Preserve the centralized permission matrix and enforce authorization and row scoping in every server endpoint.
-
-No production data or credentials are included.
+The project uses SQLite locally and a PostgreSQL production schema at `prisma/postgresql/schema.prisma`. See `docs/DEPLOYMENT_GUIDE.md` in the full app checkout before configuring production. Do not use real learner data until the security, privacy and PostgreSQL validation gates in `docs/ROADMAP.md` are closed.
