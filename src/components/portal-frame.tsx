@@ -8,6 +8,7 @@ import { readSession } from "@/lib/session";
 import { ThemeStyleControls } from "@/components/design-system/theme-provider";
 import PageNavigation from "@/components/page-navigation";
 import NotificationBell from "@/components/notification-bell";
+import MobileNav from "@/components/mobile-nav";
 import { getRoleNavigation } from "@/lib/navigation";
 
 const roleTitle: Record<string, string> = {
@@ -89,16 +90,13 @@ export default async function PortalFrame({ children, active }: { children: Reac
           </div>
         </header>
         <PageNavigation active={active} homeHref={homeHref} userId={session.id} />
-        <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-68px)] outline-none">{children}</div>
+        <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-68px)] outline-none pb-20 lg:pb-0">{children}</div>
       </div>
-      <nav aria-label="Mobile navigation" className="mobile-nav fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-slate-200/80 bg-white/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,35,70,.07)] backdrop-blur lg:hidden">
-        {nav.slice(0, 4).map(({ label, href, icon: Icon }) => (
-          <Link key={label} href={href} aria-current={active === label ? "page" : undefined}
-            className={`flex min-h-12 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold ${active === label ? "text-blue-700" : "text-slate-500"}`}>
-            <Icon size={18} />{label}
-          </Link>
-        ))}
-      </nav>
+      <MobileNav
+        role={user.role}
+        active={active}
+        user={{ name: user.name, role: user.role, avatarUrl: user.avatarUrl }}
+      />
     </div>
   );
 }
