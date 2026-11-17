@@ -46,7 +46,8 @@ export async function POST(request: Request) {
       ? `Draft a brief teacher's weekly taught-content summary for ${grade}, ${subject}, topic ${topic}. Return JSON with topics and reflection. Keep it factual and concise; do not claim teaching happened, label it as a draft for the teacher to verify.`
       : `Suggest a school textbook catalogue record for ${grade}, ${subject}, topic ${topic}. Do not invent a real publisher or ISBN. Return JSON with title, publisher (empty if unknown), curriculumCode (empty if unknown).`;
   try {
-    const response = await fetch("http://127.0.0.1:11434/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: process.env.OLLAMA_MODEL || "llama3.2", stream: false, format: "json", prompt }), signal: AbortSignal.timeout(15000) });
+    const ollamaBase = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+    const response = await fetch(`${ollamaBase}/api/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: process.env.OLLAMA_MODEL || "llama3.2", stream: false, format: "json", prompt }), signal: AbortSignal.timeout(15000) });
     if (!response.ok) throw new Error("Local model unavailable");
     const payload = await response.json() as { response?: string };
     const draft = schema.safeParse(JSON.parse(payload.response ?? ""));
